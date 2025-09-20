@@ -4,19 +4,20 @@
     "slug": "SiPeka-App",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/logo/sipeka-logo.png",
     "scheme": "sipekaapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.SiPekaApp"
     },
     "android": {
+      "package": "com.anonymous.SiPekaApp",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true
+        "foregroundImage": "./assets/logo/Logo.png",
+        "backgroundColor": "#18353D"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -28,10 +29,10 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/splash-screen.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#18353D"
         }
       ]
     ],
