@@ -1,10 +1,22 @@
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from "expo-linear-gradient";
-import { Image, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Dimensions, Image, SafeAreaView, ScrollView, Text, View } from "react-native";
+
+const { width } = Dimensions.get('window')
+
+const bannerData = [
+  { id: 1, url: require("../../assets/images/banner.png") },
+  { id: 2, url: require("../../assets/images/banner.png") },
+  { id: 3, url: require("../../assets/images/banner.png") },
+]
 
 
 export default function Index() {
+
+  const bannerWidth = width * 0.9;
+  const marginHorizontal = width * 0.05
+
   return (
     <View className="flex-1 bg-[#18353D]">
       <Image source={require('../../assets/images/bg-home-screnn.png')}
@@ -52,22 +64,22 @@ export default function Index() {
             >
               <View className="flex flex-col items-center justify-center">
                 <MaterialIcons name="notifications-none" size={32} color="#fff" />
-                <Text className='w-24 text-xs font-light text-center text-white'>Dalam Provinsi</Text>
+                <Text className='w-24 text-xs font-light text-center text-white'>Pindah Dalam Provinsi</Text>
               </View>
 
               <View className="flex flex-col items-center justify-center">
                 <MaterialIcons name="notifications-none" size={32} color="#fff" />
-                <Text className='w-24 text-xs font-light text-center text-white'>Luar Provinsi</Text>
+                <Text className='w-24 text-xs font-light text-center text-white'>Pindah Luar Provinsi</Text>
               </View>
 
               <View className="flex flex-col items-center justify-center">
                 <MaterialIcons name="notifications-none" size={32} color="#fff" />
-                <Text className='w-24 text-xs font-light text-center text-white'>Ijin Hajatan</Text>
+                <Text className='w-24 text-xs font-light text-center text-white'>Permohonan Ijin Hajatan</Text>
               </View>
 
               <View className="flex flex-col items-center justify-center">
                 <MaterialIcons name="notifications-none" size={32} color="#fff" />
-                <Text className='w-24 text-xs font-light text-center text-white'>Dispen Nikah</Text>
+                <Text className='w-24 text-xs font-light text-center text-white'>Surat Dispen Nikah</Text>
               </View>
 
             </LinearGradient>
@@ -149,6 +161,35 @@ export default function Index() {
             </View>
 
 
+          </View>
+
+
+          {/* Banner */}
+          <View className="mt-6">
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              pagingEnabled
+              contentContainerStyle={{ paddingHorizontal: marginHorizontal }}
+            >
+              {bannerData.map((banner, index) => (
+                <View
+                  key={banner.id}
+                  style={{
+                    width: bannerWidth,
+                    marginRight: 12,
+                    borderRadius: 12,
+                    overflow: "hidden",
+                  }}
+                >
+                  <Image
+                    source={banner.url}
+                    style={{ width: "100%" }}
+                    resizeMode="cover"
+                  />
+                </View>
+              ))}
+            </ScrollView>
           </View>
 
         </ScrollView>
