@@ -1,18 +1,27 @@
+import API_BASE_URL from '@/config/api';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'; // Menggunakan MaterialIcons
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import React from 'react';
-import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+
 
 type ProfileMenuItemProps = {
     icon: keyof typeof MaterialIcons.glyphMap; // biar autocomplete sesuai icon
     text: string;
+    onPress?: () => void;
 };
 
 
 // Komponen terpisah untuk setiap item menu agar kode lebih bersih
-const ProfileMenuItem: React.FC<ProfileMenuItemProps> = ({ icon, text }) => {
+const ProfileMenuItem: React.FC<ProfileMenuItemProps> = ({ icon, text, onPress }) => {
     return (
-        <TouchableOpacity activeOpacity={0.8} className="mb-3 overflow-hidden rounded-lg">
+        <TouchableOpacity
+            activeOpacity={0.8}
+            className="mb-3 overflow-hidden rounded-lg"
+            onPress={onPress} // ✅ tambahkan ini
+        >
             <LinearGradient
                 colors={["#03B99A", "#016F5C"]}
                 start={{ x: 0, y: 0 }}
@@ -31,7 +40,37 @@ const ProfileMenuItem: React.FC<ProfileMenuItemProps> = ({ icon, text }) => {
 };
 
 
+
 const Profile = () => {
+    const router = useRouter();
+
+    const handleLogout = async () => {
+        try {
+            const token = await AsyncStorage.getItem("token");
+
+            if (token) {
+                const res = await fetch(`${API_BASE_URL}/logout`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`,
+                    },
+                });
+
+                const data = await res.json();
+                console.log("Logout response:", data);
+            }
+
+            await AsyncStorage.removeItem("token");
+            router.replace("/auth/login");
+        } catch (error) {
+            console.error("Logout error:", error);
+            Alert.alert("Error", "Gagal logout, coba lagi.");
+        }
+    };
+
+
+
     return (
         <SafeAreaView className="flex-1 bg-[#18353D]">
             <ScrollView
@@ -68,7 +107,7 @@ const Profile = () => {
                     {/* Address Section */}
                     <View className="mb-8">
                         <Text className="mb-4 text-lg font-bold text-white">Address</Text>
-                        <ProfileMenuItem icon="location-on" text="Edit Address" />
+                        <ProfileMenuItem icon="logout" text="Log out" onPress={handleLogout} />
                     </View>
 
 
