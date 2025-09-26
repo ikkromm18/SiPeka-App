@@ -1,35 +1,27 @@
-import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { AuthProvider } from "./context/AuthContext";
 import "./global.css";
 
-
-// --- tahan splash biar tidak langsung hilang
-SplashScreen.preventAutoHideAsync();
-
 export default function RootLayout() {
-  // load font (atau bisa tambahkan asset lain di sini)
-  const [loaded] = useFonts({
-    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
-  });
-
-  useEffect(() => {
-    if (loaded) {
-      // kalau font sudah siap → tutup splash
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  // kalau belum siap, jangan render apapun → biarkan splash tetap tampil
-  if (!loaded) {
-    return null;
-  }
-
-
-  return <Stack>
-    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-    <Stack.Screen name="pengajuans/[id]" options={{ headerShown: false }} />
-
-  </Stack>;
+  return (
+    <AuthProvider>
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: "#172E35" },
+          headerTintColor: "#fff",
+          headerTitleStyle: { fontWeight: "bold" },
+        }}
+      >
+        <Stack.Screen name="auth/login" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/register" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/lupapassword" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="pindahDalamProvinsi" options={{ headerShown: true, title: "Pindah Dalam Provinsi" }} />
+        <Stack.Screen name="pindahLuarProvinsi" options={{ headerShown: true, title: "Pindah Luar Provinsi" }} />
+        <Stack.Screen name="ijinHajatan" options={{ headerShown: true, title: "Ijin Hajatan" }} />
+        <Stack.Screen name="dispenNikah" options={{ headerShown: true, title: "Dispen Nikah" }} />
+        <Stack.Screen name="pengajuans/[id]" options={{ headerShown: false }} />
+      </Stack>
+    </AuthProvider>
+  );
 }
