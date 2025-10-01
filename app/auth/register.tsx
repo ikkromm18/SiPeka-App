@@ -1,58 +1,129 @@
 import API_BASE_URL from "@/config/api";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
     ActivityIndicator,
     Alert,
     Image,
-    KeyboardAvoidingView,
     Platform,
-    ScrollView,
     StatusBar,
     Text,
     TextInput,
     TouchableOpacity,
     View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 const Register = () => {
     const router = useRouter();
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [passwordConfirmation, setPasswordConfirmation] = useState("");
     const [loading, setLoading] = useState(false);
 
+    // State form
+    const [form, setForm] = useState({
+        name: "",
+        email: "",
+        password: "",
+        password_confirmation: "",
+        nik: "",
+        no_kk: "",
+        nama_kepala_keluarga: "",
+        alamat: "",
+        desa: "",
+        rt: "",
+        rw: "",
+        kode_pos: "",
+        dusun: "",
+        nomor_hp: "",
+        pekerjaan: "",
+        tempat_lahir: "",
+        tgl_lahir: "",
+    });
+
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [fotoKtp, setFotoKtp] = useState<any>(null);
+    const [fotoKk, setFotoKk] = useState<any>(null);
+
+    // ✅ Fungsi pilih gambar (kamera / galeri)
+    // Fungsi pilih gambar (kamera / galeri)
+    const pickImage = async (setter: any, fromCamera = false) => {
+        try {
+            let permissionResult;
+            if (fromCamera) {
+                permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+            } else {
+                permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            }
+
+            if (!permissionResult.granted) {
+                Alert.alert("Izin ditolak", "Aplikasi butuh izin untuk mengakses gambar/kamera");
+                return;
+            }
+
+            const options: ImagePicker.ImagePickerOptions = {
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                quality: 0.7,
+            };
+
+            const result = fromCamera
+                ? await ImagePicker.launchCameraAsync(options)
+                : await ImagePicker.launchImageLibraryAsync(options);
+
+            // ✅ result.canceled = true kalau user batal pilih gambar
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                setter(result.assets[0]);
+            }
+        } catch (error) {
+            console.error("ImagePicker Error:", error);
+            Alert.alert("Error", "Gagal memilih gambar");
+        }
+    };
+
+
+    // ✅ Fungsi daftar
     const handleRegister = async () => {
-        if (!name || !email || !password || !passwordConfirmation) {
-            Alert.alert("Error", "Semua field wajib diisi");
+        if (!form.name || !form.email || !form.password || !form.password_confirmation) {
+            Alert.alert("Error", "Field wajib (nama, email, password, konfirmasi) belum diisi");
             return;
         }
 
         setLoading(true);
         try {
+            let formData = new FormData();
+
+            Object.keys(form).forEach((key) => {
+                // @ts-ignore
+                formData.append(key, form[key]);
+            });
+
+            if (fotoKtp) {
+                formData.append("foto_ktp", {
+                    uri: fotoKtp.uri,
+                    type: "image/jpeg",
+                    name: "foto_ktp.jpg",
+                } as any);
+            }
+            if (fotoKk) {
+                formData.append("foto_kk", {
+                    uri: fotoKk.uri,
+                    type: "image/jpeg",
+                    name: "foto_kk.jpg",
+                } as any);
+            }
+
             const response = await fetch(`${API_BASE_URL}/register`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Accept: "application/json",
-                },
-                body: JSON.stringify({
-                    name,
-                    email,
-                    password,
-                    password_confirmation: passwordConfirmation,
-                }),
+                headers: { Accept: "application/json" }, // ❌ jangan set Content-Type manual
+                body: formData,
             });
 
             const data = await response.json();
 
             if (response.ok) {
                 Alert.alert("Berhasil", "Registrasi berhasil, silakan login", [
-                    {
-                        text: "OK",
-                        onPress: () => router.replace("/auth/login"),
-                    },
+                    { text: "OK", onPress: () => router.replace("/auth/login") },
                 ]);
             } else {
                 Alert.alert("Gagal", data.message || "Registrasi gagal");
@@ -65,90 +136,153 @@ const Register = () => {
         }
     };
 
-
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={{ flex: 1 }}
+        <KeyboardAwareScrollView
+            contentContainerStyle={{ flexGrow: 1 }}
+            keyboardShouldPersistTaps="handled"
+            enableOnAndroid={true}
+            extraScrollHeight={100} // ✅ biar input tidak ketutup keyboard
         >
-            <ScrollView
-                contentContainerStyle={{ flexGrow: 1 }}
-                keyboardShouldPersistTaps="handled"
-            >
-                <View className="items-center justify-center flex-1 p-8 bg-white">
-                    <StatusBar barStyle="dark-content" />
+            <View className="items-center justify-center flex-1 p-8 bg-white">
+                <StatusBar barStyle="dark-content" />
 
-                    <Image
-                        source={require("../../assets/logo/auth-logo.png")}
-                        className="w-28 h-28"
-                        resizeMode="contain"
-                    />
+                <Image
+                    source={require("../../assets/logo/auth-logo.png")}
+                    className="mt-5 w-28 h-28"
+                    resizeMode="contain"
+                />
 
-                    <Text className="mt-6 text-xl font-bold tracking-wider text-center text-gray-800">
-                        REGISTER AKUN SIPEKA
-                    </Text>
-                    <Text className="mb-10 text-lg font-semibold text-center text-gray-600">
-                        KECAMATAN PETATUKAN
-                    </Text>
+                <Text className="mt-6 text-xl font-bold tracking-wider text-center text-gray-800">
+                    REGISTER AKUN SIPEKA
+                </Text>
+                <Text className="mb-10 text-lg font-semibold text-center text-gray-600">
+                    KECAMATAN PETATUKAN
+                </Text>
 
+                {/* Input utama */}
+                {[
+                    { key: "name", placeholder: "Nama Lengkap Sesuai KTP" },
+                    { key: "email", placeholder: "Email", keyboardType: "email-address" },
+                    { key: "password", placeholder: "Password", secureTextEntry: true },
+                    { key: "password_confirmation", placeholder: "Konfirmasi Password", secureTextEntry: true },
+                    { key: "nik", placeholder: "NIK" },
+                    { key: "no_kk", placeholder: "No KK" },
+                    { key: "nama_kepala_keluarga", placeholder: "Nama Kepala Keluarga" },
+                    { key: "alamat", placeholder: "Alamat" },
+                    { key: "desa", placeholder: "Desa" },
+                    { key: "rt", placeholder: "RT" },
+                    { key: "rw", placeholder: "RW" },
+                    { key: "kode_pos", placeholder: "Kode Pos" },
+                    { key: "dusun", placeholder: "Dusun" },
+                    { key: "nomor_hp", placeholder: "Nomor HP", keyboardType: "phone-pad" },
+                    { key: "pekerjaan", placeholder: "Pekerjaan" },
+                    { key: "tempat_lahir", placeholder: "Tempat Lahir" },
+                ].map((item) => (
                     <TextInput
-                        className="w-full p-4 mb-4 text-base border border-gray-300 rounded-lg"
-                        placeholder="Masukkan Nama Lengkap Sesuai KTP"
-                        value={name}
-                        onChangeText={setName}
-                    />
-
-                    <TextInput
-                        className="w-full p-4 mb-4 text-base border border-gray-300 rounded-lg"
-                        placeholder="Masukkan Email"
-                        keyboardType="email-address"
+                        key={item.key}
+                        className="w-full p-4 mb-3 text-base border border-gray-300 rounded-lg"
+                        placeholder={item.placeholder}
+                        keyboardType={item.keyboardType as any}
+                        secureTextEntry={item.secureTextEntry}
                         autoCapitalize="none"
-                        value={email}
-                        onChangeText={setEmail}
+                        value={form[item.key as keyof typeof form]}
+                        onChangeText={(text) => setForm({ ...form, [item.key]: text })}
                     />
+                ))}
 
-                    <TextInput
-                        className="w-full p-4 mb-4 text-base border border-gray-300 rounded-lg"
-                        placeholder="Password"
-                        secureTextEntry
-                        value={password}
-                        onChangeText={setPassword}
+                {/* Date picker */}
+                <TouchableOpacity
+                    className="w-full p-4 mb-3 border border-gray-300 rounded-lg"
+                    onPress={() => setShowDatePicker(true)}
+                >
+                    <Text>
+                        {form.tgl_lahir ? `📅 ${form.tgl_lahir}` : "Pilih Tanggal Lahir"}
+                    </Text>
+                </TouchableOpacity>
+                {showDatePicker && (
+                    <DateTimePicker
+                        value={form.tgl_lahir ? new Date(form.tgl_lahir) : new Date()}
+                        mode="date"
+                        display={Platform.OS === "ios" ? "spinner" : "calendar"}
+                        onChange={(event, selectedDate) => {
+                            setShowDatePicker(false);
+                            if (selectedDate) {
+                                const isoDate = selectedDate.toISOString().split("T")[0];
+                                setForm({ ...form, tgl_lahir: isoDate });
+                            }
+                        }}
                     />
+                )}
 
-                    <TextInput
-                        className="w-full p-4 text-base border border-gray-300 rounded-lg"
-                        placeholder="Konfirmasi Password"
-                        secureTextEntry
-                        value={passwordConfirmation}
-                        onChangeText={setPasswordConfirmation}
-                    />
-
+                {/* Upload Foto KTP */}
+                <View className="flex-row w-full gap-2">
                     <TouchableOpacity
-                        onPress={handleRegister}
-                        disabled={loading}
-                        className="items-center justify-center w-full p-4 mt-4 bg-teal-500 rounded-lg shadow"
-                        activeOpacity={0.8}
+                        onPress={() => pickImage(setFotoKtp, false)}
+                        className="items-center flex-1 p-3 border border-gray-400 rounded-lg"
                     >
-                        {loading ? (
-                            <ActivityIndicator color="#fff" />
-                        ) : (
-                            <Text className="text-base font-bold text-white">
-                                Daftar Akun
-                            </Text>
-                        )}
+                        <Text>{fotoKtp ? "📂 Ulangi Foto KTP" : "Upload Foto KTP"}</Text>
                     </TouchableOpacity>
-
                     <TouchableOpacity
-                        className="mt-4 mb-6"
-                        onPress={() => router.push("/auth/login")}
+                        onPress={() => pickImage(setFotoKtp, true)}
+                        className="items-center flex-1 p-3 border border-gray-400 rounded-lg"
                     >
-                        <Text className="font-semibold text-teal-600">
-                            Sudah Punya Akun? Login
-                        </Text>
+                        <Text>📷 Kamera KTP</Text>
                     </TouchableOpacity>
                 </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+
+                {fotoKtp && (
+                    <Image
+                        source={{ uri: fotoKtp.uri }}
+                        style={{ width: 120, height: 80, marginTop: 8, borderRadius: 8 }}
+                    />
+                )}
+
+                {/* Upload Foto KK */}
+                <View className="flex-row w-full gap-2 mt-2">
+                    <TouchableOpacity
+                        onPress={() => pickImage(setFotoKk, false)}
+                        className="items-center flex-1 p-3 border border-gray-400 rounded-lg"
+                    >
+                        <Text>{fotoKk ? "📂 Ulangi Foto KK" : "Upload Foto KK"}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => pickImage(setFotoKk, true)}
+                        className="items-center flex-1 p-3 border border-gray-400 rounded-lg"
+                    >
+                        <Text>📷 Kamera KK</Text>
+                    </TouchableOpacity>
+                </View>
+                {fotoKk && (
+                    <Image
+                        source={{ uri: fotoKk.uri }}
+                        style={{ width: 120, height: 80, marginTop: 8, borderRadius: 8 }}
+                    />
+                )}
+
+                {/* Tombol daftar */}
+                <TouchableOpacity
+                    onPress={handleRegister}
+                    disabled={loading}
+                    className="items-center justify-center w-full p-4 mt-6 bg-teal-500 rounded-lg shadow"
+                    activeOpacity={0.8}
+                >
+                    {loading ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <Text className="text-base font-bold text-white">Daftar Akun</Text>
+                    )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    className="mt-4 mb-6"
+                    onPress={() => router.push("/auth/login")}
+                >
+                    <Text className="font-semibold text-teal-600">
+                        Sudah Punya Akun? Login
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        </KeyboardAwareScrollView>
     );
 };
 

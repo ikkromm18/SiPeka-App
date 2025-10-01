@@ -1,91 +1,60 @@
+import API_BASE_URL from "@/config/api";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import React from "react";
-import { SafeAreaView, ScrollView, Text, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, SafeAreaView, ScrollView, Text, View } from "react-native";
 
-// Dummy data riwayat
-const riwayatData = [
-    {
-        id: 1,
-        title: "Pindah Antar Kabupaten / Provinsi",
-        date: "10 September 2025, 10.00",
-        icon: "location-on",
-    },
-    {
-        id: 2,
-        title: "Permohonan Ijin Hajatan",
-        date: "08 September 2025, 14.30",
-        icon: "event",
-    },
-    {
-        id: 3,
-        title: "Surat Dispen Nikah",
-        date: "05 September 2025, 09.15",
-        icon: "favorite-border",
-    },
-    {
-        id: 4,
-        title: "Pindah Dalam Provinsi",
-        date: "03 September 2025, 11.45",
-        icon: "location-on",
-    },
-    {
-        id: 5,
-        title: "Pindah Luar Provinsi",
-        date: "01 September 2025, 16.20",
-        icon: "flight-takeoff",
-    },
-    {
-        id: 6,
-        title: "Pindah Antar Kabupaten / Provinsi",
-        date: "10 September 2025, 10.00",
-        icon: "location-on",
-    },
-    {
-        id: 7,
-        title: "Permohonan Ijin Hajatan",
-        date: "08 September 2025, 14.30",
-        icon: "event",
-    },
-    {
-        id: 8,
-        title: "Surat Dispen Nikah",
-        date: "05 September 2025, 09.15",
-        icon: "favorite-border",
-    },
-    {
-        id: 9,
-        title: "Pindah Dalam Provinsi",
-        date: "03 September 2025, 11.45",
-        icon: "location-on",
-    },
-    {
-        id: 10,
-        title: "Pindah Luar Provinsi",
-        date: "01 September 2025, 16.20",
-        icon: "flight-takeoff",
-    },
-    {
-        id: 11,
-        title: "Surat Dispen Nikah",
-        date: "05 September 2025, 09.15",
-        icon: "favorite-border",
-    },
-    {
-        id: 12,
-        title: "Pindah Dalam Provinsi",
-        date: "03 September 2025, 11.45",
-        icon: "location-on",
-    },
-    {
-        id: 13,
-        title: "Pindah Luar Provinsi",
-        date: "01 September 2025, 16.20",
-        icon: "flight-takeoff",
-    },
-];
+type Pengajuan = {
+    id: number;
+    jenis_surats: {
+        id: number;
+        nama_jenis: string;
+    };
+    status: string;
+    created_at: string;
+};
 
 const History = () => {
+    const [data, setData] = useState<Pengajuan[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchHistory = async () => {
+        try {
+            setLoading(true);
+            const token = await AsyncStorage.getItem("token");
+            if (!token) return;
+
+            const res = await fetch(`${API_BASE_URL}/pengajuan`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: "application/json",
+                },
+            });
+            const json = await res.json();
+            console.log("📌 Response pengajuan:", json);
+
+            // kalau API return object dengan key "data"
+            if (Array.isArray(json)) {
+                setData(json);
+            } else if (Array.isArray(json.data)) {
+                setData(json.data);
+            } else {
+                setData([]); // fallback biar tidak error
+            }
+        } catch (error) {
+            console.error("❌ Error fetch history:", error);
+            setData([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+    useEffect(() => {
+        fetchHistory();
+    }, []);
+
     return (
         <View className="flex-1 bg-[#18353D]">
             <SafeAreaView>
@@ -94,31 +63,46 @@ const History = () => {
                         Riwayat Pengajuan
                     </Text>
 
-                    <View className="flex flex-col pb-36">
-                        {riwayatData.map((item) => (
-                            <View
-                                key={item.id}
-                                className="flex flex-row items-center justify-between border-b border-b-gray-600"
-                            >
-                                <View className="flex flex-row items-center justify-center py-4">
-                                    <View className="bg-[#fff] rounded-full p-2">
-                                        <MaterialIcons name={item.icon as any} size={35} color="#03BA9B" />
-                                    </View>
+                    {loading ? (
+                        <ActivityIndicator size="large" color="#03BA9B" />
+                    ) : (
+                        <View className="flex flex-col pb-36">
+                            {data.length === 0 ? (
+                                <Text className="text-center text-white">
+                                    Belum ada riwayat pengajuan.
+                                </Text>
+                            ) : (
+                                data.map((item) => (
+                                    <View
+                                        key={item.id}
+                                        className="flex flex-row items-center justify-between border-b border-b-gray-600"
+                                    >
+                                        <View className="flex flex-row items-center justify-center py-4">
+                                            <View className="bg-[#fff] rounded-full p-2">
+                                                {/* Icon bisa diubah dinamis sesuai jenis_surat */}
+                                                <MaterialIcons
+                                                    name="description"
+                                                    size={30}
+                                                    color="#03BA9B"
+                                                />
+                                            </View>
 
-                                    <View className="flex flex-col flex-shrink ml-3">
-                                        <Text className="text-base font-normal text-white">
-                                            {item.title}
-                                        </Text>
-                                        <Text className="text-xs font-light text-white">
-                                            {item.date}
-                                        </Text>
-                                    </View>
-                                </View>
+                                            <View className="flex flex-col flex-shrink ml-3">
+                                                <Text className="text-base font-normal text-white">
+                                                    {item.jenis_surats?.nama_jenis}
+                                                </Text>
+                                                <Text className="text-xs font-light text-white">
+                                                    {new Date(item.created_at).toLocaleString()}
+                                                </Text>
+                                            </View>
+                                        </View>
 
-                                <FontAwesome6 name="angle-right" size={16} color="white" />
-                            </View>
-                        ))}
-                    </View>
+                                        <FontAwesome6 name="angle-right" size={16} color="white" />
+                                    </View>
+                                ))
+                            )}
+                        </View>
+                    )}
                 </ScrollView>
             </SafeAreaView>
         </View>

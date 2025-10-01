@@ -2,8 +2,8 @@ import API_BASE_URL from '@/config/api';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'; // Menggunakan MaterialIcons
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import React from 'react';
+import { Link, useRouter } from "expo-router";
+import React, { useEffect, useState } from 'react';
 import { Alert, Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 
@@ -43,6 +43,39 @@ const ProfileMenuItem: React.FC<ProfileMenuItemProps> = ({ icon, text, onPress }
 
 const Profile = () => {
     const router = useRouter();
+
+    const [user, setUser] = useState<{ name?: string; email?: string } | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadUser = async () => {
+            try {
+                const token = await AsyncStorage.getItem("token");
+                if (!token) return;
+
+                const res = await fetch(`${API_BASE_URL}/user`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        Accept: "application/json",
+                    },
+                });
+
+
+                if (res.ok) {
+                    const data = await res.json();
+                    setUser(data);
+                } else {
+                    console.log("Gagal ambil user:", await res.text());
+                }
+            } catch (e) {
+                console.log("Error:", e);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadUser();
+    }, []);
 
     const handleLogout = async () => {
         try {
@@ -91,22 +124,26 @@ const Profile = () => {
                                 <MaterialIcons name="check" size={16} color="white" />
                             </View>
                         </View>
-                        <Text className="mt-4 text-2xl font-bold text-[#03BA9B]">Aulia Unnaufal</Text>
-                        <Text className="text-base text-white">naufal@gmail.com</Text>
+                        <Text className="mt-4 text-2xl font-bold text-[#03BA9B]">  {user?.name || "Guest"}</Text>
+                        <Text className="text-base text-white">  {user?.email || "Guest"}</Text>
                     </View>
 
                     {/* Personal Information Section */}
                     <View className="mb-6">
-                        <Text className="mb-4 text-lg font-bold text-white">Personal Information</Text>
-                        <ProfileMenuItem icon="person-outline" text="Edit Profile" />
-                        <ProfileMenuItem icon="credit-card" text="Payment Method" />
-                        <ProfileMenuItem icon="lock-outline" text="Old Password" />
-                        <ProfileMenuItem icon="lock-outline" text="New Password" />
+                        <Text className="mb-4 text-lg font-bold text-white">Informasi Pribadi</Text>
+                        <Link href="/editProfile" asChild>
+                            <ProfileMenuItem icon="person-outline" text="Edit Profile" />
+                        </Link>
+                        {/* <ProfileMenuItem icon="credit-card" text="Payment Method" /> */}
+                        <Link href="/ubahPassword" asChild>
+                            <ProfileMenuItem icon="lock-outline" text="Ganti Password" />
+                        </Link>
+                        {/* <ProfileMenuItem icon="lock-outline" text="New Password" /> */}
                     </View>
 
                     {/* Address Section */}
                     <View className="mb-8">
-                        <Text className="mb-4 text-lg font-bold text-white">Address</Text>
+                        <Text className="mb-4 text-lg font-bold text-white">Lainnya</Text>
                         <ProfileMenuItem icon="logout" text="Log out" onPress={handleLogout} />
                     </View>
 

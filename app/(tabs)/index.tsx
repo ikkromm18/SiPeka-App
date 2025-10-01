@@ -1,3 +1,4 @@
+import API_BASE_URL from '@/config/api';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -14,41 +15,15 @@ const bannerData = [
   { id: 3, url: require("../../assets/images/banner.png") },
 ]
 
-
-
-// Data dummy Riwayat
-const riwayatData = [
-  {
-    id: 1,
-    title: "Pindah Antar Kabupaten / Provinsi",
-    date: "10 September 2025, 10.00",
-    icon: "location-on",
-  },
-  {
-    id: 2,
-    title: "Permohonan Ijin Hajatan",
-    date: "08 September 2025, 14.30",
-    icon: "event",
-  },
-  {
-    id: 3,
-    title: "Surat Dispen Nikah",
-    date: "05 September 2025, 09.15",
-    icon: "favorite-border",
-  },
-  {
-    id: 4,
-    title: "Pindah Dalam Provinsi",
-    date: "03 September 2025, 11.45",
-    icon: "location-on",
-  },
-  {
-    id: 5,
-    title: "Pindah Luar Provinsi",
-    date: "01 September 2025, 16.20",
-    icon: "flight-takeoff",
-  },
-];
+type Pengajuan = {
+  id: number;
+  jenis_surats: {
+    id: number;
+    nama_jenis: string;
+  };
+  status: string;
+  created_at: string;
+};
 
 
 const RequirementItem = ({ title, items }: { title: string; items: string[] }) => (
@@ -70,6 +45,8 @@ export default function Index() {
   const [user, setUser] = useState<{ name?: string; email?: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [riwayat, setRiwayat] = useState<Pengajuan[]>([]);
+  const [loadingRiwayat, setLoadingRiwayat] = useState(true);
 
   const bannerWidth = width * 0.9;
   const marginHorizontal = width * 0.05
@@ -80,13 +57,12 @@ export default function Index() {
         const token = await AsyncStorage.getItem("token");
         if (!token) return;
 
-        const res = await fetch("http://192.168.1.48:8000/api/user", {
+        const res = await fetch(`${API_BASE_URL}/user`, {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: "application/json",
           },
         });
-
 
         if (res.ok) {
           const data = await res.json();
@@ -101,8 +77,38 @@ export default function Index() {
       }
     };
 
+    // ambil riwayat pengajuan terbaru
+    const loadRiwayat = async () => {
+      try {
+        const token = await AsyncStorage.getItem("token");
+        if (!token) return;
+
+        const res = await fetch(`${API_BASE_URL}/pengajuan/terbaru`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          console.log("📌 Riwayat data API:", data);
+          setRiwayat(data);
+
+        } else {
+          console.log("Gagal ambil riwayat:", await res.text());
+        }
+      } catch (e) {
+        console.log("Error:", e);
+      } finally {
+        setLoadingRiwayat(false);
+      }
+    };
+
     loadUser();
+    loadRiwayat();
   }, []);
+
 
   if (loading) {
     return (
@@ -227,25 +233,36 @@ export default function Index() {
             <Text className="mt-4 text-xl font-medium text-white">Riwayat Pengajuan</Text>
 
             <View className="flex flex-col">
-              {riwayatData.slice(-3).map((item) => (
-                <View
-                  key={item.id}
-                  className="flex flex-row items-center justify-between border-b border-b-gray-600"
-                >
-                  <View className="flex flex-row items-center justify-center py-4">
-                    <View className="bg-[#fff] rounded-full p-2">
-                      <MaterialIcons name={item.icon as any} size={35} color="#03BA9B" />
+              {loadingRiwayat ? (
+                <ActivityIndicator size="small" color="#03BA9B" className="mt-4" />
+              ) : riwayat.length > 0 ? (
+                riwayat.map((item) => (
+                  <View
+                    key={item.id}
+                    className="flex flex-row items-center justify-between border-b border-b-gray-600"
+                  >
+                    <View className="flex flex-row items-center justify-center py-4">
+                      <View className="bg-[#fff] rounded-full p-2">
+                        <MaterialIcons name="description" size={35} color="#03BA9B" />
+                      </View>
+
+                      <View className="flex flex-col ml-3 max-w-40">
+                        <Text className="font-normal text-white text-normal">
+                          {item.jenisSurats?.nama_jenis || "Pengajuan Surat"}
+                        </Text>
+
+                        <Text className="text-xs font-light text-white">
+                          {new Date(item.created_at).toLocaleString("id-ID")}
+                        </Text>
+                      </View>
                     </View>
 
-                    <View className="flex flex-col ml-3 max-w-40">
-                      <Text className="font-normal text-white text-normal">{item.title}</Text>
-                      <Text className="text-xs font-light text-white">{item.date}</Text>
-                    </View>
+                    <FontAwesome6 name="angle-right" size={16} color="white" />
                   </View>
-
-                  <FontAwesome6 name="angle-right" size={16} color="white" />
-                </View>
-              ))}
+                ))
+              ) : (
+                <Text className="mt-4 text-sm text-white">Belum ada riwayat pengajuan</Text>
+              )}
             </View>
 
             <View className="flex flex-row items-center justify-center gap-2 mt-2">

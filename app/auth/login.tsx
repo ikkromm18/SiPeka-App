@@ -1,5 +1,5 @@
 import API_BASE_URL from "@/config/api";
-import { useRouter } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
     ActivityIndicator,
@@ -47,7 +47,7 @@ const Login = () => {
                 Alert.alert("Login Gagal", data.message || "Email/Password salah");
             }
         } catch (error) {
-            Alert.alert("Error", "Tidak bisa terhubung ke server");
+            Alert.alert("Error", "Email/Password Salah");
         } finally {
             setLoading(false);
         }
@@ -114,7 +114,7 @@ const Login = () => {
                 <Text className="text-base font-bold text-teal-500">Register</Text>
             </TouchableOpacity>
 
-            {/* <Link href="/(tabs)">Test Middleware</Link> */}
+            <Link href="/(tabs)">Test Middleware</Link>
         </View>
     );
 };
