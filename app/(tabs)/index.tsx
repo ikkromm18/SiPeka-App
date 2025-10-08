@@ -183,7 +183,7 @@ export default function Index() {
               colors={["#03B99A", "#016F5C"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              className="flex flex-row items-center justify-center h-24 rounded-2xl"
+              className="flex flex-row items-center justify-center h-24 gap-4 rounded-2xl"
             >
               <RenderMenu href="/pindahDalamProvinsi" icon="location-on" text="Pindah Dalam Provinsi" />
               <RenderMenu href="/pindahLuarProvinsi" icon="flight-takeoff" text="Pindah Luar Provinsi" />

@@ -82,7 +82,7 @@ const IjinHajatan = () => {
 
             const payload = {
                 ...user, // ambil nik, nama, email, alamat dari API /user
-                jenis_surat_id: 1,
+                jenis_surat_id: 4,
                 fields: fields.map((f) => ({
                     field_id: f.id,
                     nilai: form[f.nama_field] || "",
