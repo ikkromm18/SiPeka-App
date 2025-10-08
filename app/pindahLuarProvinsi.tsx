@@ -54,7 +54,7 @@ const PindahLuarProvinsi = () => {
     useEffect(() => {
         const fetchFields = async () => {
             try {
-                const res = await fetch(`${API_BASE_URL}/getFieldSurat/1`);
+                const res = await fetch(`${API_BASE_URL}/getFieldSurat/2`);
                 const data = await res.json();
                 setFields(data);
 

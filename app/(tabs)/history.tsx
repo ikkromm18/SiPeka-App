@@ -2,8 +2,10 @@ import API_BASE_URL from "@/config/api";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from "react-native";
+
 
 type Pengajuan = {
     id: number;
@@ -18,6 +20,7 @@ type Pengajuan = {
 const History = () => {
     const [data, setData] = useState<Pengajuan[]>([]);
     const [loading, setLoading] = useState(true);
+
 
     const fetchHistory = async () => {
         try {
@@ -73,32 +76,42 @@ const History = () => {
                                 </Text>
                             ) : (
                                 data.map((item) => (
-                                    <View
+                                    <TouchableOpacity
                                         key={item.id}
-                                        className="flex flex-row items-center justify-between border-b border-b-gray-600"
+                                        onPress={() => router.push(`/pengajuans/${item.id}`)}
                                     >
-                                        <View className="flex flex-row items-center justify-center py-4">
-                                            <View className="bg-[#fff] rounded-full p-2">
-                                                {/* Icon bisa diubah dinamis sesuai jenis_surat */}
-                                                <MaterialIcons
-                                                    name="description"
-                                                    size={30}
-                                                    color="#03BA9B"
-                                                />
+                                        <View className="flex flex-row items-center justify-between border-b border-b-gray-600">
+                                            <View className="flex flex-row items-center justify-center py-4">
+                                                <View className="bg-[#fff] rounded-full p-2">
+                                                    <MaterialIcons
+                                                        name="description"
+                                                        size={30}
+                                                        color="#03BA9B"
+                                                    />
+                                                </View>
+
+                                                <View className="flex flex-col flex-shrink ml-3">
+                                                    <Text className="text-base font-normal text-white">
+                                                        {item.jenis_surats?.nama_jenis}
+                                                    </Text>
+                                                    <Text className="text-xs font-light text-white">
+                                                        {new Date(item.created_at).toLocaleString()}
+                                                    </Text>
+                                                </View>
                                             </View>
 
-                                            <View className="flex flex-col flex-shrink ml-3">
-                                                <Text className="text-base font-normal text-white">
-                                                    {item.jenis_surats?.nama_jenis}
-                                                </Text>
-                                                <Text className="text-xs font-light text-white">
-                                                    {new Date(item.created_at).toLocaleString()}
-                                                </Text>
-                                            </View>
+                                            <Text className="px-1 text-xs font-normal text-white rounded bg-slate-500">
+                                                {item.status}
+                                            </Text>
+
+                                            <FontAwesome6
+                                                name="angle-right"
+                                                size={16}
+                                                color="white"
+                                            />
                                         </View>
+                                    </TouchableOpacity>
 
-                                        <FontAwesome6 name="angle-right" size={16} color="white" />
-                                    </View>
                                 ))
                             )}
                         </View>

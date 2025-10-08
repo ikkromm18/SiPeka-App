@@ -67,7 +67,7 @@ const Login = () => {
                 SISTEM PELAYANAN ADMINISTRASI
             </Text>
             <Text className="mb-10 text-lg font-semibold text-center text-gray-600">
-                KECAMATAN PETATUKAN
+                KECAMATAN PETARUKAN
             </Text>
 
             <TextInput
