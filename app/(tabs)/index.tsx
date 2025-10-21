@@ -5,10 +5,10 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link } from 'expo-router';
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Dimensions, Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Dimensions, Image, RefreshControl, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
-const { width } = Dimensions.get('window')
+const { width } = Dimensions.get('window');
 
 const bannerData = [
   { id: 1, url: require("../../assets/images/banner.png") },
@@ -48,70 +48,83 @@ const RequirementItem = ({ title, items }: { title: string; items: string[] }) =
 export default function Index() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-
   const [riwayat, setRiwayat] = useState<Pengajuan[]>([]);
   const [loadingRiwayat, setLoadingRiwayat] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const bannerWidth = width * 0.9;
   const marginHorizontal = width * 0.05;
-
   const WaAdmin = "https://wa.me/6282134885973";
 
+  // ✅ Pisahkan fungsi agar bisa dipanggil ulang saat refresh
+  const loadUser = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) return;
+
+      const res = await fetch(`${API_BASE_URL}/user`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data);
+      } else {
+        console.log("Gagal ambil user:", await res.text());
+      }
+    } catch (e) {
+      console.log("Error loadUser:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadRiwayat = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) return;
+
+      const res = await fetch(`${API_BASE_URL}/pengajuanterbaru`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setRiwayat(data);
+      } else {
+        console.log("Gagal ambil riwayat:", await res.text());
+      }
+    } catch (e) {
+      console.log("Error loadRiwayat:", e);
+    } finally {
+      setLoadingRiwayat(false);
+    }
+  };
+
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const token = await AsyncStorage.getItem("token");
-        if (!token) return;
-
-        const res = await fetch(`${API_BASE_URL}/user`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-          },
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data);
-        } else {
-          console.log("Gagal ambil user:", await res.text());
-        }
-      } catch (e) {
-        console.log("Error:", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const loadRiwayat = async () => {
-      try {
-        const token = await AsyncStorage.getItem("token");
-        if (!token) return;
-
-        const res = await fetch(`${API_BASE_URL}/pengajuanterbaru`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-          },
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          setRiwayat(data);
-        } else {
-          console.log("Gagal ambil riwayat:", await res.text());
-        }
-      } catch (e) {
-        console.log("Error:", e);
-      } finally {
-        setLoadingRiwayat(false);
-      }
-    };
-
     loadUser();
     loadRiwayat();
   }, []);
 
+  // ✅ Pull to Refresh handler
+  const onRefresh = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      await Promise.all([loadUser(), loadRiwayat()]);
+    } catch (e) {
+      console.log("Refresh error:", e);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  // Loading Screen
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-[#172E35]">
@@ -148,21 +161,28 @@ export default function Index() {
       />
 
       <SafeAreaView>
-        <ScrollView>
+        <ScrollView
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#03BA9B" />
+          }
+        >
+          {/* Header */}
           <View className="flex flex-row items-center justify-between px-6 mt-2">
             <Image
               source={require("../../assets/logo/sipeka-logo.png")}
               className="w-28 h-28"
               resizeMode="contain"
             />
+            <Link href={'/notifikasi'}>
+              <View className="bg-[#fff] rounded-full p-2">
+                <MaterialIcons name="notifications-none" size={24} color="#03BA9B" />
+              </View>
+            </Link>
 
-            <View className="bg-[#fff] rounded-full p-2">
-              <MaterialIcons name="notifications-none" size={24} color="#03BA9B" />
-            </View>
 
-            <View className="absolute items-center justify-center w-5 h-5 bg-red-500 rounded-full top-8 right-4">
-              <Text className="text-xs font-bold text-white">3</Text>
-            </View>
+            {/* <View className="absolute items-center justify-center w-5 h-5 bg-red-500 rounded-full top-8 right-4">
+              <Text className="text-xs font-bold text-white">0</Text>
+            </View> */}
           </View>
 
           {/* Data User */}
@@ -197,23 +217,14 @@ export default function Index() {
 
           {/* Persyaratan */}
           <View className="bg-[#172E35] rounded-xl mt-8 px-8 py-4">
-
-            <Text className="text-lg font-semibold text-[#03BA9B] mb-2">
-              Jam Pelayanan
-            </Text>
-
-
-            <View className='p-4 border border-[#03BA9B] rounded flex items-center gap-3 text-center w-full mb-4'>
-
-              <Text className='text-sm font-normal text-white'>
+            <Text className="text-lg font-semibold text-[#03BA9B] mb-2">Jam Pelayanan</Text>
+            <View className="p-4 border border-[#03BA9B] rounded flex items-center gap-3 text-center w-full mb-4">
+              <Text className="text-sm font-normal text-white">
                 Senin - Jumat (08.00 - 14.00)
               </Text>
             </View>
 
-
-            <Text className="text-lg font-semibold text-[#03BA9B] mb-4">
-              Persyaratan Pengajuan Surat
-            </Text>
+            <Text className="text-lg font-semibold text-[#03BA9B] mb-4">Persyaratan Pengajuan Surat</Text>
             <RequirementItem
               title="1. Surat Pengantar Pindah"
               items={["Surat pengantar pindah dari kelurahan", "KTP", "KK", "Buku Nikah"]}
@@ -228,13 +239,9 @@ export default function Index() {
             />
 
             <Link href={WaAdmin}>
-              <View className='p-4 bg-[#03BA9B] rounded flex flex-row items-center justify-center gap-3 text-center w-full'>
-                <View>
-                  <FontAwesome name="whatsapp" size={24} color="white" />
-                </View>
-                <Text className='text-white '>
-                  Hubungi WA Admin
-                </Text>
+              <View className="p-4 bg-[#03BA9B] rounded flex flex-row items-center justify-center gap-3 text-center w-full">
+                <FontAwesome name="whatsapp" size={24} color="white" />
+                <Text className="text-white">Hubungi WA Admin</Text>
               </View>
             </Link>
           </View>
@@ -306,7 +313,7 @@ export default function Index() {
   );
 }
 
-// Komponen menu surat
+// Komponen Menu Surat
 type RenderMenuProps = {
   href: string;
   icon: keyof typeof MaterialIcons.glyphMap;
@@ -318,9 +325,7 @@ function RenderMenu({ href, icon, text }: RenderMenuProps) {
     <Link href={href as any} asChild>
       <TouchableOpacity className="items-center w-20">
         <MaterialIcons name={icon} size={32} color="#fff" />
-        <Text className="w-24 mt-1 text-xs font-light text-center text-white">
-          {text}
-        </Text>
+        <Text className="w-24 mt-1 text-xs font-light text-center text-white">{text}</Text>
       </TouchableOpacity>
     </Link>
   );

@@ -114,7 +114,7 @@ const Login = () => {
                 <Text className="text-base font-bold text-teal-500">Register</Text>
             </TouchableOpacity>
 
-            <Link href="/(tabs)">Test Middleware</Link>
+            <Link className="absolute bottom-16 text-zinc-300" href="/(tabs)">SiPeka App</Link>
         </View>
     );
 };

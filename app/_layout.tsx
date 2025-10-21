@@ -22,6 +22,8 @@ export default function RootLayout() {
         <Stack.Screen name="pindahLuarProvinsi" options={{ headerShown: true, title: "Pindah Luar Provinsi" }} />
         <Stack.Screen name="ijinHajatan" options={{ headerShown: true, title: "Ijin Hajatan" }} />
         <Stack.Screen name="dispenNikah" options={{ headerShown: true, title: "Dispen Nikah" }} />
+        <Stack.Screen name="notifikasi" options={{ headerShown: true, title: "Pemberitahuan" }} />
+
 
 
 
