@@ -38,11 +38,11 @@ const downloadSurat = async (id: number) => {
         const token = await AsyncStorage.getItem("token");
         const downloadResumable = FileSystem.createDownloadResumable(
             `${API_BASE_URL}/pengajuan/${id}/cetak`,
-            FileSystem.documentDirectory + `surat_${id}.pdf`, // ✅ ubah jadi pdf
+            FileSystem.documentDirectory + `surat_${id}.pdf`,
             {
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    Accept: "application/pdf", // ✅ ubah jadi pdf
+                    Accept: "application/pdf",
                 },
             }
         );
@@ -56,13 +56,12 @@ const downloadSurat = async (id: number) => {
             });
         }
     } catch (e) {
-        console.error("Gagal download:", e);
+        console.error("❌ Gagal download:", e);
     }
 };
 
-
 export default function PengajuanDetail() {
-    const { id } = useLocalSearchParams(); // ambil ID dari URL
+    const { id } = useLocalSearchParams();
     const [detail, setDetail] = useState<PengajuanDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
@@ -88,7 +87,7 @@ export default function PengajuanDetail() {
                 const json = await res.json();
                 setDetail(json);
             } catch (error) {
-                console.error("Error fetch detail pengajuan:", error);
+                console.error("❌ Error fetch detail pengajuan:", error);
             } finally {
                 setLoading(false);
             }
@@ -113,11 +112,14 @@ export default function PengajuanDetail() {
         );
     }
 
+    // 💡 Cek apakah tombol bisa diklik
+    const isCompleted = detail.status?.toLowerCase() === "selesai";
+    const buttonColor = isCompleted ? "bg-[#03BA9B]" : "bg-gray-500";
+    const buttonText = isCompleted ? "Lihat & Download Surat" : "Menunggu Selesai...";
+
     return (
         <ScrollView className="flex-1 bg-[#18353D] p-6">
             <View className="mb-8">
-
-
                 <Text className="mb-4 text-2xl font-bold text-white">
                     {detail.jenis_surats?.nama_jenis}
                 </Text>
@@ -149,28 +151,15 @@ export default function PengajuanDetail() {
                     ))
                 )}
 
-                {/* <TouchableOpacity
-                    onPress={() => {
-                        router.push(`/pengajuans/pdf-view?id=${detail.id}`);
-                    }}
-                    className="bg-[#03BA9B] p-3 rounded-lg mt-4 mb-8"
-                >
-                    <Text className="font-semibold text-center text-white">
-                        Lihat PDF
-                    </Text>
-                </TouchableOpacity> */}
-
                 <TouchableOpacity
-                    onPress={() => {
-                        router.push(`/pengajuans/pdf-view?id=${detail.id}`);
-                    }}
-                    className="bg-[#03BA9B] p-3 rounded-lg mt-4 mb-10"
+                    disabled={!isCompleted}
+                    onPress={() => router.push(`/pengajuans/pdf-view?id=${detail.id}`)}
+                    className={`${buttonColor} p-3 rounded-lg mt-4 mb-10 ${!isCompleted && "opacity-60"}`}
                 >
                     <Text className="font-semibold text-center text-white">
-                        Lihat & Download Surat
+                        {buttonText}
                     </Text>
                 </TouchableOpacity>
-
             </View>
         </ScrollView>
     );

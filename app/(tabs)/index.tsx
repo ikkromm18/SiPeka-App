@@ -1,4 +1,5 @@
 import API_BASE_URL from '@/config/api';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -11,8 +12,8 @@ const { width } = Dimensions.get('window')
 
 const bannerData = [
   { id: 1, url: require("../../assets/images/banner.png") },
-  { id: 2, url: require("../../assets/images/banner.png") },
-  { id: 3, url: require("../../assets/images/banner.png") },
+  { id: 2, url: require("../../assets/images/banner2.png") },
+  { id: 3, url: require("../../assets/images/banner3.png") },
 ];
 
 type Pengajuan = {
@@ -53,6 +54,8 @@ export default function Index() {
 
   const bannerWidth = width * 0.9;
   const marginHorizontal = width * 0.05;
+
+  const WaAdmin = "https://wa.me/6282134885973";
 
   useEffect(() => {
     const loadUser = async () => {
@@ -194,6 +197,20 @@ export default function Index() {
 
           {/* Persyaratan */}
           <View className="bg-[#172E35] rounded-xl mt-8 px-8 py-4">
+
+            <Text className="text-lg font-semibold text-[#03BA9B] mb-2">
+              Jam Pelayanan
+            </Text>
+
+
+            <View className='p-4 border border-[#03BA9B] rounded flex items-center gap-3 text-center w-full mb-4'>
+
+              <Text className='text-sm font-normal text-white'>
+                Senin - Jumat (08.00 - 14.00)
+              </Text>
+            </View>
+
+
             <Text className="text-lg font-semibold text-[#03BA9B] mb-4">
               Persyaratan Pengajuan Surat
             </Text>
@@ -209,6 +226,17 @@ export default function Index() {
               title="3. Surat Ijin Hajatan"
               items={["Pengantar dari kelurahan", "KTP"]}
             />
+
+            <Link href={WaAdmin}>
+              <View className='p-4 bg-[#03BA9B] rounded flex flex-row items-center justify-center gap-3 text-center w-full'>
+                <View>
+                  <FontAwesome name="whatsapp" size={24} color="white" />
+                </View>
+                <Text className='text-white '>
+                  Hubungi WA Admin
+                </Text>
+              </View>
+            </Link>
           </View>
 
           {/* Riwayat Pengajuan */}

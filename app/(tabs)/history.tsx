@@ -4,8 +4,15 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from "react-native";
-
+import {
+    ActivityIndicator,
+    RefreshControl,
+    SafeAreaView,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
 type Pengajuan = {
     id: number;
@@ -20,7 +27,7 @@ type Pengajuan = {
 const History = () => {
     const [data, setData] = useState<Pengajuan[]>([]);
     const [loading, setLoading] = useState(true);
-
+    const [refreshing, setRefreshing] = useState(false);
 
     const fetchHistory = async () => {
         try {
@@ -37,22 +44,26 @@ const History = () => {
             const json = await res.json();
             console.log("📌 Response pengajuan:", json);
 
-            // kalau API return object dengan key "data"
             if (Array.isArray(json)) {
                 setData(json);
             } else if (Array.isArray(json.data)) {
                 setData(json.data);
             } else {
-                setData([]); // fallback biar tidak error
+                setData([]);
             }
         } catch (error) {
             console.error("❌ Error fetch history:", error);
             setData([]);
         } finally {
             setLoading(false);
+            setRefreshing(false); // ✅ pastikan spinner berhenti juga saat selesai
         }
     };
 
+    const onRefresh = () => {
+        setRefreshing(true);
+        fetchHistory(); // ✅ ambil data ulang saat di-refresh
+    };
 
     useEffect(() => {
         fetchHistory();
@@ -61,7 +72,16 @@ const History = () => {
     return (
         <View className="flex-1 bg-[#18353D]">
             <SafeAreaView>
-                <ScrollView className="px-6 py-4">
+                <ScrollView
+                    className="px-6 py-4"
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            colors={["#007AFF"]}
+                        />
+                    }
+                >
                     <Text className="mt-8 mb-4 text-2xl font-semibold text-white">
                         Riwayat Pengajuan
                     </Text>
@@ -95,23 +115,26 @@ const History = () => {
                                                         {item.jenis_surats?.nama_jenis}
                                                     </Text>
                                                     <Text className="text-xs font-light text-white">
-                                                        {new Date(item.created_at).toLocaleString()}
+                                                        {new Date(
+                                                            item.created_at
+                                                        ).toLocaleString()}
                                                     </Text>
                                                 </View>
                                             </View>
 
-                                            <Text className="px-1 text-xs font-normal text-white rounded bg-slate-500">
-                                                {item.status}
-                                            </Text>
+                                            <View className="flex flex-row gap-3">
+                                                <Text className="px-1 text-xs font-normal text-white rounded bg-slate-500">
+                                                    {item.status}
+                                                </Text>
 
-                                            <FontAwesome6
-                                                name="angle-right"
-                                                size={16}
-                                                color="white"
-                                            />
+                                                <FontAwesome6
+                                                    name="angle-right"
+                                                    size={16}
+                                                    color="white"
+                                                />
+                                            </View>
                                         </View>
                                     </TouchableOpacity>
-
                                 ))
                             )}
                         </View>

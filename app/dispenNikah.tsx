@@ -1,7 +1,8 @@
 import API_BASE_URL from "@/config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import { useRouter } from "expo-router"; // ✅ import router
+import * as DocumentPicker from "expo-document-picker";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 
@@ -22,13 +23,13 @@ type User = {
 
 const DispenNikah = () => {
     const [fields, setFields] = useState<FieldSurat[]>([]);
-    const [form, setForm] = useState<{ [key: string]: string }>({});
+    const [form, setForm] = useState<{ [key: string]: any }>({});
     const [loading, setLoading] = useState(false);
     const [user, setUser] = useState<User | null>(null);
 
-    const router = useRouter(); // ✅ inisialisasi router
+    const router = useRouter();
 
-    // ambil data user yang login dari API
+    // ambil data user dari API
     useEffect(() => {
         const fetchUser = async () => {
             const token = await AsyncStorage.getItem("token");
@@ -41,7 +42,7 @@ const DispenNikah = () => {
                         Accept: "application/json",
                     },
                 });
-                setUser(res.data); // pastikan API /user return { nik, nama, email, alamat }
+                setUser(res.data);
             } catch (err) {
                 console.error("❌ Error ambil user:", err);
             }
@@ -58,7 +59,7 @@ const DispenNikah = () => {
                 const data = await res.json();
                 setFields(data);
 
-                const initForm: { [key: string]: string } = {};
+                const initForm: { [key: string]: any } = {};
                 data.forEach((f: FieldSurat) => {
                     initForm[f.nama_field] = "";
                 });
@@ -71,6 +72,27 @@ const DispenNikah = () => {
         fetchFields();
     }, []);
 
+    // 📂 pilih file dengan DocumentPicker
+    const handlePickFile = async (fieldName: string) => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: "*/*",
+                copyToCacheDirectory: true,
+            });
+
+            if (result.canceled) return;
+
+            const file = result.assets[0];
+            setForm((prevForm) => ({
+                ...prevForm,
+                [fieldName]: file,
+            }));
+        } catch (error) {
+            console.error("❌ Error picking file:", error);
+        }
+    };
+
+    // 🚀 kirim data ke API
     const handleSubmit = async () => {
         if (!user) {
             Alert.alert("❌ Error", "User tidak ditemukan");
@@ -79,24 +101,39 @@ const DispenNikah = () => {
 
         try {
             setLoading(true);
-
-            const payload = {
-                ...user, // ambil nik, nama, email, alamat dari API /user
-                jenis_surat_id: 3,
-                fields: fields.map((f) => ({
-                    field_id: f.id,
-                    nilai: form[f.nama_field] || "",
-                })),
-            };
-
             const token = await AsyncStorage.getItem("token");
+            const formData = new FormData();
+
+            // Tambahkan data user
+            formData.append("nik", user.nik);
+            formData.append("name", user.name);
+            formData.append("email", user.email);
+            formData.append("alamat", user.alamat);
+            formData.append("jenis_surat_id", "3");
+
+            // Tambahkan field dari API
+            fields.forEach((f) => {
+                const value = form[f.nama_field];
+
+                if (f.tipe_field === "file" && value && value.uri) {
+                    formData.append(`fields[${f.id}]`, {
+                        uri: value.uri,
+                        name: value.name || `file_${f.id}`,
+                        type: value.mimeType || "application/octet-stream",
+                    } as any);
+                } else {
+                    formData.append(`fields[${f.id}]`, value || "");
+                }
+            });
+
             const res = await fetch(`${API_BASE_URL}/pengajuan`, {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
+                    Accept: "application/json",
+                    "Content-Type": "multipart/form-data",
                 },
-                body: JSON.stringify(payload),
+                body: formData,
             });
 
             const data = await res.json();
@@ -105,8 +142,6 @@ const DispenNikah = () => {
             if (res.ok) {
                 Alert.alert("✅ Berhasil", "Pengajuan berhasil dikirim!");
                 console.log("Response:", data);
-
-                // ✅ Redirect ke history setelah berhasil
                 router.push("/(tabs)/history");
             } else {
                 Alert.alert("❌ Gagal", data.message || "Terjadi kesalahan");
@@ -128,17 +163,32 @@ const DispenNikah = () => {
                         {item.nama_field}{" "}
                         {item.is_required === 1 && <Text className="text-red-500">*</Text>}
                     </Text>
-                    <TextInput
-                        className="w-full p-4 text-base border border-gray-300 rounded-lg"
-                        placeholder={`Masukkan ${item.nama_field}`}
-                        keyboardType={item.tipe_field === "number" ? "numeric" : "default"}
-                        secureTextEntry={item.tipe_field === "password"}
-                        autoCapitalize="none"
-                        value={form[item.nama_field] || ""}
-                        onChangeText={(text) =>
-                            setForm({ ...form, [item.nama_field]: text })
-                        }
-                    />
+
+                    {/* === Input Berdasarkan Tipe === */}
+                    {item.tipe_field === "file" ? (
+                        <TouchableOpacity
+                            onPress={() => handlePickFile(item.nama_field)}
+                            className="p-4 border border-gray-300 rounded-lg bg-gray-50"
+                        >
+                            <Text className="text-gray-700">
+                                {form[item.nama_field]?.name
+                                    ? `📄 ${form[item.nama_field].name}`
+                                    : `Pilih file untuk ${item.nama_field}`}
+                            </Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <TextInput
+                            className="w-full p-4 text-base border border-gray-300 rounded-lg"
+                            placeholder={`Masukkan ${item.nama_field}`}
+                            keyboardType={item.tipe_field === "number" ? "numeric" : "default"}
+                            secureTextEntry={item.tipe_field === "password"}
+                            autoCapitalize="none"
+                            value={form[item.nama_field] || ""}
+                            onChangeText={(text) =>
+                                setForm({ ...form, [item.nama_field]: text })
+                            }
+                        />
+                    )}
                 </View>
             ))}
 

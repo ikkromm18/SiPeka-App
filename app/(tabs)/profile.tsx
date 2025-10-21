@@ -117,12 +117,10 @@ const Profile = () => {
                     <View className="items-center pt-16 mb-10">
                         <View>
                             <Image
-                                source={{ uri: 'https://i.pravatar.cc/150?u=jackwilliam' }}
+                                source={{ uri: 'https://i.pinimg.com/736x/76/f3/f3/76f3f3007969fd3b6db21c744e1ef289.jpg' }}
                                 className="rounded-full w-28 h-28"
                             />
-                            <View className="absolute bottom-0 right-0 p-1 bg-green-500 border-2 border-white rounded-full">
-                                <MaterialIcons name="check" size={16} color="white" />
-                            </View>
+
                         </View>
                         <Text className="mt-4 text-2xl font-bold text-[#03BA9B]">  {user?.name || "Guest"}</Text>
                         <Text className="text-base text-white">  {user?.email || "Guest"}</Text>
