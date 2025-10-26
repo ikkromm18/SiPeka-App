@@ -1,50 +1,50 @@
 import API_BASE_URL from '@/config/api';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons'; // Menggunakan MaterialIcons
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link, useRouter } from "expo-router";
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
+// 🧩 Tipe data user lengkap — agar tidak merah lagi
+type User = {
+    id?: number;
+    name?: string;
+    email?: string;
+    foto_profil?: string; // ✅ tambahkan field ini
+};
 
+// Komponen item menu profil
 type ProfileMenuItemProps = {
-    icon: keyof typeof MaterialIcons.glyphMap; // biar autocomplete sesuai icon
+    icon: keyof typeof MaterialIcons.glyphMap;
     text: string;
     onPress?: () => void;
 };
 
-
-// Komponen terpisah untuk setiap item menu agar kode lebih bersih
-const ProfileMenuItem: React.FC<ProfileMenuItemProps> = ({ icon, text, onPress }) => {
-    return (
-        <TouchableOpacity
-            activeOpacity={0.8}
-            className="mb-3 overflow-hidden rounded-lg"
-            onPress={onPress} // ✅ tambahkan ini
+const ProfileMenuItem: React.FC<ProfileMenuItemProps> = ({ icon, text, onPress }) => (
+    <TouchableOpacity
+        activeOpacity={0.8}
+        className="mb-3 overflow-hidden rounded-lg"
+        onPress={onPress}
+    >
+        <LinearGradient
+            colors={["#03B99A", "#016F5C"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            className="flex-row items-center justify-between p-4"
         >
-            <LinearGradient
-                colors={["#03B99A", "#016F5C"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                className="flex-row items-center justify-between p-4"
-            >
-                <View className="flex-row items-center">
-                    <MaterialIcons name={icon} size={22} color="#fff" />
-                    <Text className="ml-4 text-base font-medium text-white">{text}</Text>
-                </View>
-
-                <MaterialIcons name="edit" size={18} color="#fff" />
-            </LinearGradient>
-        </TouchableOpacity>
-    );
-};
-
-
+            <View className="flex-row items-center">
+                <MaterialIcons name={icon} size={22} color="#fff" />
+                <Text className="ml-4 text-base font-medium text-white">{text}</Text>
+            </View>
+            <MaterialIcons name="edit" size={18} color="#fff" />
+        </LinearGradient>
+    </TouchableOpacity>
+);
 
 const Profile = () => {
     const router = useRouter();
-
-    const [user, setUser] = useState<{ name?: string; email?: string } | null>(null);
+    const [user, setUser] = useState<User | null>(null); // ✅ gunakan tipe User
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -60,15 +60,15 @@ const Profile = () => {
                     },
                 });
 
-
                 if (res.ok) {
                     const data = await res.json();
+                    console.log("✅ Data user:", data);
                     setUser(data);
                 } else {
-                    console.log("Gagal ambil user:", await res.text());
+                    console.log("⚠️ Gagal ambil user:", await res.text());
                 }
             } catch (e) {
-                console.log("Error:", e);
+                console.log("❌ Error:", e);
             } finally {
                 setLoading(false);
             }
@@ -102,50 +102,70 @@ const Profile = () => {
         }
     };
 
+    console.log(`${API_BASE_URL}/storage/${user?.foto_profil}`);
 
 
     return (
+
         <SafeAreaView className="flex-1 bg-[#18353D]">
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 30 }}
             >
                 <View className="p-6">
-
-
-                    {/* Profile Info */}
+                    {/* Bagian Profil */}
                     <View className="items-center pt-16 mb-10">
-                        <View>
+                        <View className="relative">
                             <Image
-                                source={{ uri: 'https://i.pinimg.com/736x/76/f3/f3/76f3f3007969fd3b6db21c744e1ef289.jpg' }}
-                                className="rounded-full w-28 h-28"
+                                source={{
+                                    uri: user?.foto_profil
+                                        ? `${API_BASE_URL}/storage/${user.foto_profil}`
+                                        : 'https://i.pinimg.com/736x/76/f3/f3/76f3f3007969fd3b6db21c744e1ef289.jpg',
+                                }}
+                                className="rounded-full w-28 h-28 border-4 border-[#03BA9B]"
                             />
-
                         </View>
-                        <Text className="mt-4 text-2xl font-bold text-[#03BA9B]">  {user?.name || "Guest"}</Text>
-                        <Text className="text-base text-white">  {user?.email || "Guest"}</Text>
+
+                        <Text className="mt-4 text-2xl font-bold text-[#03BA9B]">
+                            {user?.name || "Guest"}
+                        </Text>
+                        <Text className="text-base text-white">
+                            {user?.email || "Guest"}
+                        </Text>
                     </View>
 
-                    {/* Personal Information Section */}
+                    {/* Informasi Pribadi */}
                     <View className="mb-6">
                         <Text className="mb-4 text-lg font-bold text-white">Informasi Pribadi</Text>
                         <Link href="/editProfile" asChild>
                             <ProfileMenuItem icon="person-outline" text="Edit Profile" />
                         </Link>
-                        {/* <ProfileMenuItem icon="credit-card" text="Payment Method" /> */}
                         <Link href="/ubahPassword" asChild>
                             <ProfileMenuItem icon="lock-outline" text="Ganti Password" />
                         </Link>
-                        {/* <ProfileMenuItem icon="lock-outline" text="New Password" /> */}
                     </View>
 
-                    {/* Address Section */}
+                    {/* Lainnya */}
                     <View className="mb-8">
                         <Text className="mb-4 text-lg font-bold text-white">Lainnya</Text>
-                        <ProfileMenuItem icon="logout" text="Log out" onPress={handleLogout} />
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            className="mb-3 overflow-hidden rounded-lg"
+                            onPress={handleLogout}
+                        >
+                            <LinearGradient
+                                colors={["#03B99A", "#016F5C"]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                className="flex-row items-center justify-between p-4"
+                            >
+                                <View className="flex-row items-center">
+                                    <MaterialIcons name="logout" size={22} color="#fff" />
+                                    <Text className="ml-4 text-base font-medium text-white">Log Out</Text>
+                                </View>
+                            </LinearGradient>
+                        </TouchableOpacity>
                     </View>
-
-
                 </View>
             </ScrollView>
         </SafeAreaView>

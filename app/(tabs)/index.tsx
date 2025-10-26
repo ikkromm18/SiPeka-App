@@ -31,6 +31,7 @@ type User = {
   name: string;
   alamat: string;
   is_active: boolean;
+  foto_profil: string;
 };
 
 const RequirementItem = ({ title, items }: { title: string; items: string[] }) => (
@@ -50,6 +51,8 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
   const [riwayat, setRiwayat] = useState<Pengajuan[]>([]);
   const [loadingRiwayat, setLoadingRiwayat] = useState(true);
+  const [nomorAdmin, setNomorAdmin] = useState<string | null>(null);
+  const [loadingNomorAdmin, setLoadingNomorAdmin] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const bannerWidth = width * 0.9;
@@ -82,6 +85,32 @@ export default function Index() {
     }
   };
 
+  const loadNomorAdmin = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/getNomorAdmin`, {
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        const nomor = json?.data?.nomor_admin;
+        if (nomor) {
+          const formatted = nomor.replace(/^0/, "62");
+          setNomorAdmin(`https://wa.me/${formatted}`);
+        }
+      } else {
+        console.log("Gagal ambil nomor admin:", await res.text());
+      }
+    } catch (error) {
+      console.log("Error loadNomorAdmin:", error);
+    } finally {
+      setLoadingNomorAdmin(false);
+    }
+  };
+
+
   const loadRiwayat = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
@@ -110,6 +139,7 @@ export default function Index() {
   useEffect(() => {
     loadUser();
     loadRiwayat();
+    loadNomorAdmin();
   }, []);
 
   // ✅ Pull to Refresh handler
@@ -136,21 +166,41 @@ export default function Index() {
   // Jika user tidak aktif
   if (user && !user.is_active) {
     return (
-      <View className="flex-1 bg-[#18353D] items-center justify-center px-6">
+      <View className="flex-1 bg-[#18353D] px-6">
+        {/* Background Image */}
         <Image
           source={require("../../assets/images/bg-home-screnn.png")}
-          className="absolute z-0 object-cover w-full"
+          className="absolute inset-0 w-full h-full"
+          resizeMode="cover"
         />
-        <MaterialIcons name="lock-outline" size={64} color="#03BA9B" />
-        <Text className="mt-4 text-xl font-semibold text-center text-white">
-          Akun Anda Belum Aktif
-        </Text>
-        <Text className="mt-2 text-center text-gray-300">
-          Silakan hubungi admin atau pihak kecamatan untuk mengaktifkan kembali akun Anda.
-        </Text>
+
+        {/* Konten Scroll */}
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#03BA9B"
+            />
+          }
+        >
+          <MaterialIcons name="lock-outline" size={64} color="#03BA9B" />
+          <Text className="mt-4 text-xl font-semibold text-center text-white">
+            Akun Anda Belum Aktif
+          </Text>
+          <Text className="mt-2 text-center text-gray-300">
+            Silakan hubungi admin atau pihak kecamatan untuk mengaktifkan kembali akun Anda.
+          </Text>
+        </ScrollView>
       </View>
     );
   }
+
 
   // Jika user aktif
   return (
@@ -179,16 +229,16 @@ export default function Index() {
               </View>
             </Link>
 
-
-            {/* <View className="absolute items-center justify-center w-5 h-5 bg-red-500 rounded-full top-8 right-4">
-              <Text className="text-xs font-bold text-white">0</Text>
-            </View> */}
           </View>
 
           {/* Data User */}
           <View className="flex-col flex-1 px-4 mt-2 ml-2">
             <Image
-              source={require("../../assets/logo/Avatar.png")}
+              source={
+                user?.foto_profil
+                  ? { uri: `${API_BASE_URL}/storage/${user.foto_profil}` } // jika dari server
+                  : require("../../assets/logo/Avatar.png") // jika kosong, pakai default
+              }
               style={{ width: 50, height: 50, borderRadius: 16 }}
               resizeMode="cover"
             />
@@ -238,12 +288,25 @@ export default function Index() {
               items={["Pengantar dari kelurahan", "KTP"]}
             />
 
-            <Link href={WaAdmin}>
-              <View className="p-4 bg-[#03BA9B] rounded flex flex-row items-center justify-center gap-3 text-center w-full">
-                <FontAwesome name="whatsapp" size={24} color="white" />
-                <Text className="text-white">Hubungi WA Admin</Text>
+            {loadingNomorAdmin ? (
+              <View className="flex flex-row items-center justify-center w-full gap-3 p-4 text-center bg-gray-500 rounded">
+                <ActivityIndicator size="small" color="#fff" />
+                <Text className="text-white">Memuat nomor admin...</Text>
               </View>
-            </Link>
+            ) : nomorAdmin ? (
+              <Link href={nomorAdmin} asChild>
+                <TouchableOpacity className="p-4 bg-[#03BA9B] rounded flex flex-row items-center justify-center gap-3 text-center w-full">
+                  <FontAwesome name="whatsapp" size={24} color="white" />
+                  <Text className="text-white">Hubungi WA Admin</Text>
+                </TouchableOpacity>
+              </Link>
+            ) : (
+              <View className="flex flex-row items-center justify-center w-full gap-3 p-4 text-center bg-gray-500 rounded">
+                <MaterialIcons name="error-outline" size={20} color="white" />
+                <Text className="text-white">Nomor admin belum tersedia</Text>
+              </View>
+            )}
+
           </View>
 
           {/* Riwayat Pengajuan */}

@@ -1,11 +1,14 @@
 import API_BASE_URL from "@/config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
     Alert,
+    Platform,
     ScrollView,
     Text,
     TextInput,
@@ -19,6 +22,7 @@ type FieldSurat = {
     nama_field: string;
     tipe_field: string;
     is_required: number;
+    options?: string[]; // jika field tipe select, ambil array opsinya dari API
 };
 
 type User = {
@@ -33,6 +37,7 @@ const IjinHajatan = () => {
     const [form, setForm] = useState<{ [key: string]: any }>({});
     const [loading, setLoading] = useState(false);
     const [user, setUser] = useState<User | null>(null);
+    const [showDatePicker, setShowDatePicker] = useState<{ [key: string]: boolean }>({});
     const router = useRouter();
 
     // ambil data user login dari API
@@ -98,6 +103,15 @@ const IjinHajatan = () => {
         }
     };
 
+    // fungsi untuk memilih tanggal
+    const handleDateChange = (fieldName: string, event: any, selectedDate?: Date) => {
+        setShowDatePicker((prev) => ({ ...prev, [fieldName]: false }));
+        if (selectedDate) {
+            const formatted = selectedDate.toISOString().split("T")[0]; // format YYYY-MM-DD
+            setForm((prev) => ({ ...prev, [fieldName]: formatted }));
+        }
+    };
+
     // submit data ke server
     const handleSubmit = async () => {
         if (!user) {
@@ -159,7 +173,6 @@ const IjinHajatan = () => {
         }
     };
 
-
     return (
         <ScrollView className="flex-1 p-4 bg-white">
             <Text className="mb-4 text-xl font-bold">
@@ -187,6 +200,51 @@ const IjinHajatan = () => {
                                     : `Pilih file untuk ${item.nama_field}`}
                             </Text>
                         </TouchableOpacity>
+                    ) : item.tipe_field === "select" && item.options ? (
+                        <View className="border border-gray-300 rounded-lg">
+                            <Picker
+                                selectedValue={form[item.nama_field] || ""}
+                                onValueChange={(value) =>
+                                    setForm({ ...form, [item.nama_field]: value })
+                                }
+                            >
+                                <Picker.Item label={`Pilih ${item.nama_field}`} value="" />
+                                {item.options.map((opt, idx) => (
+                                    <Picker.Item key={idx} label={opt} value={opt} />
+                                ))}
+                            </Picker>
+                        </View>
+                    ) : item.tipe_field === "date" ? (
+                        <>
+                            <TouchableOpacity
+                                className="p-4 border border-gray-300 rounded-lg bg-gray-50"
+                                onPress={() =>
+                                    setShowDatePicker((prev) => ({
+                                        ...prev,
+                                        [item.nama_field]: true,
+                                    }))
+                                }
+                            >
+                                <Text className="text-gray-700">
+                                    {form[item.nama_field]
+                                        ? `📅 ${form[item.nama_field]}`
+                                        : `Pilih tanggal untuk ${item.nama_field}`}
+                                </Text>
+                            </TouchableOpacity>
+
+                            {showDatePicker[item.nama_field] && (
+                                <DateTimePicker
+                                    value={
+                                        form[item.nama_field]
+                                            ? new Date(form[item.nama_field])
+                                            : new Date()
+                                    }
+                                    mode="date"
+                                    display={Platform.OS === "ios" ? "spinner" : "default"}
+                                    onChange={(e, d) => handleDateChange(item.nama_field, e, d!)}
+                                />
+                            )}
+                        </>
                     ) : (
                         <TextInput
                             className="w-full p-4 text-base border border-gray-300 rounded-lg"
