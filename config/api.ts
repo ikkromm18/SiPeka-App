@@ -1,8 +1,8 @@
 
 // API RUMAH
-const API_BASE_URL = "http://192.168.138.242:8000/api"; 
+// const API_BASE_URL = "https://sipeka-backend.agsa02.site/api"; 
 
-// const API_BASE_URL = "http://10.65.192.242:8000/api"; 
+const API_BASE_URL = "http://192.168.1.10:8000/api"; 
 
 // const API_BASE_URL = "http://192.168.1.17:8000/api"; 
 
