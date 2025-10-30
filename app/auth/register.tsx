@@ -163,38 +163,42 @@ const Register = () => {
                 </Text>
 
                 {/* Input utama */}
+                {/* Input utama dengan label */}
                 {[
-                    { key: "name", placeholder: "Nama Lengkap Sesuai KTP" },
-                    { key: "email", placeholder: "Email", keyboardType: "email-address" },
-                    { key: "password", placeholder: "Password", secureTextEntry: true },
-                    { key: "password_confirmation", placeholder: "Konfirmasi Password", secureTextEntry: true },
-                    { key: "nik", placeholder: "NIK" },
-                    { key: "no_kk", placeholder: "No KK" },
-                    { key: "nama_kepala_keluarga", placeholder: "Nama Kepala Keluarga" },
-                    { key: "alamat", placeholder: "Alamat" },
-                    { key: "desa", placeholder: "Desa" },
-                    { key: "rt", placeholder: "RT" },
-                    { key: "rw", placeholder: "RW" },
-                    { key: "kecamatan", placeholder: "Kecamatan" },
-                    { key: "kabupaten", placeholder: "Kebupaten" },
-                    { key: "provinsi", placeholder: "Provinsi" },
-                    { key: "kode_pos", placeholder: "Kode Pos" },
-                    { key: "dusun", placeholder: "Dusun" },
-                    { key: "nomor_hp", placeholder: "Nomor HP", keyboardType: "phone-pad" },
-                    { key: "pekerjaan", placeholder: "Pekerjaan" },
-                    { key: "tempat_lahir", placeholder: "Tempat Lahir" },
+                    { key: "name", label: "Nama Lengkap", placeholder: "Nama Lengkap Sesuai KTP" },
+                    { key: "email", label: "Email", placeholder: "Email", keyboardType: "email-address" },
+                    { key: "password", label: "Password", placeholder: "Password", secureTextEntry: true },
+                    { key: "password_confirmation", label: "Konfirmasi Password", placeholder: "Konfirmasi Password", secureTextEntry: true },
+                    { key: "nik", label: "NIK", placeholder: "NIK" },
+                    { key: "no_kk", label: "No KK", placeholder: "No KK" },
+                    { key: "nama_kepala_keluarga", label: "Nama Kepala Keluarga", placeholder: "Nama Kepala Keluarga" },
+                    { key: "alamat", label: "Alamat", placeholder: "Alamat" },
+                    { key: "desa", label: "Desa", placeholder: "Desa" },
+                    { key: "rt", label: "RT", placeholder: "RT" },
+                    { key: "rw", label: "RW", placeholder: "RW" },
+                    { key: "kecamatan", label: "Kecamatan", placeholder: "Kecamatan" },
+                    { key: "kabupaten", label: "Kabupaten", placeholder: "Kabupaten" },
+                    { key: "provinsi", label: "Provinsi", placeholder: "Provinsi" },
+                    { key: "kode_pos", label: "Kode Pos", placeholder: "Kode Pos" },
+                    { key: "dusun", label: "Dusun", placeholder: "Dusun" },
+                    { key: "nomor_hp", label: "Nomor HP", placeholder: "Nomor HP", keyboardType: "phone-pad" },
+                    { key: "pekerjaan", label: "Pekerjaan", placeholder: "Pekerjaan" },
+                    { key: "tempat_lahir", label: "Tempat Lahir", placeholder: "Tempat Lahir" },
                 ].map((item) => (
-                    <TextInput
-                        key={item.key}
-                        className="w-full p-4 mb-3 text-base border border-gray-300 rounded-lg"
-                        placeholder={item.placeholder}
-                        keyboardType={item.keyboardType as any}
-                        secureTextEntry={item.secureTextEntry}
-                        autoCapitalize="none"
-                        value={form[item.key as keyof typeof form]}
-                        onChangeText={(text) => setForm({ ...form, [item.key]: text })}
-                    />
+                    <View key={item.key} className="w-full mb-4">
+                        <Text className="mb-2 font-semibold text-gray-700">{item.label}</Text>
+                        <TextInput
+                            className="w-full p-4 text-base border border-gray-300 rounded-lg"
+                            placeholder={item.placeholder}
+                            keyboardType={item.keyboardType as any}
+                            secureTextEntry={item.secureTextEntry}
+                            autoCapitalize="none"
+                            value={form[item.key as keyof typeof form]}
+                            onChangeText={(text) => setForm({ ...form, [item.key]: text })}
+                        />
+                    </View>
                 ))}
+
 
                 {/* Date picker */}
                 <TouchableOpacity

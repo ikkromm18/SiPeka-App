@@ -70,21 +70,29 @@ const Login = () => {
                 KECAMATAN PETARUKAN
             </Text>
 
-            <TextInput
-                className="w-full p-4 mb-4 text-base border border-gray-300 rounded-lg"
-                placeholder="Email atau Username"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={setEmail}
-            />
-            <TextInput
-                className="w-full p-4 text-base border border-gray-300 rounded-lg"
-                placeholder="Password"
-                secureTextEntry={true}
-                value={password}
-                onChangeText={setPassword}
-            />
+            <View className="w-full mb-4">
+                <Text className="mb-2 font-semibold text-gray-700">Email atau Username</Text>
+                <TextInput
+                    className="w-full p-4 text-base border border-gray-300 rounded-lg"
+                    placeholder="Email atau Username"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    value={email}
+                    onChangeText={setEmail}
+                />
+            </View>
+
+            <View className="w-full mb-4">
+                <Text className="mb-2 font-semibold text-gray-700">Password</Text>
+                <TextInput
+                    className="w-full p-4 text-base border border-gray-300 rounded-lg"
+                    placeholder="Password"
+                    secureTextEntry={true}
+                    value={password}
+                    onChangeText={setPassword}
+                />
+            </View>
+
 
             <TouchableOpacity
                 className="self-end mt-2 mb-6"
