@@ -55,9 +55,34 @@ export default function Index() {
   const [loadingNomorAdmin, setLoadingNomorAdmin] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+
   const bannerWidth = width * 0.9;
   const marginHorizontal = width * 0.05;
   const WaAdmin = "https://wa.me/6282134885973";
+
+  const loadUnreadNotification = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) return;
+
+      const res = await fetch(`${API_BASE_URL}/notifications/unread`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        setUnreadCount(json.count ?? 0);
+      }
+    } catch (e) {
+      console.log("Error loadUnreadNotification:", e);
+    }
+  };
+
 
   // ✅ Pisahkan fungsi agar bisa dipanggil ulang saat refresh
   const loadUser = async () => {
@@ -140,13 +165,14 @@ export default function Index() {
     loadUser();
     loadRiwayat();
     loadNomorAdmin();
+    loadUnreadNotification();
   }, []);
 
   // ✅ Pull to Refresh handler
   const onRefresh = useCallback(async () => {
     try {
       setRefreshing(true);
-      await Promise.all([loadUser(), loadRiwayat()]);
+      await Promise.all([loadUser(), loadRiwayat(), loadUnreadNotification(),]);
     } catch (e) {
       console.log("Refresh error:", e);
     } finally {
@@ -223,11 +249,41 @@ export default function Index() {
               className="w-28 h-28"
               resizeMode="contain"
             />
-            <Link href={'/notifikasi'}>
+            {/* <Link href={'/notifikasi'}>
               <View className="bg-[#fff] rounded-full p-2">
                 <MaterialIcons name="notifications-none" size={24} color="#03BA9B" />
               </View>
+            </Link> */}
+
+            <Link href={'/notifikasi'}>
+              <View className="relative">
+                <View className="bg-[#fff] rounded-full p-2">
+                  <MaterialIcons name="notifications-none" size={24} color="#03BA9B" />
+                </View>
+
+                {unreadCount > 0 && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: -4,
+                      right: -4,
+                      backgroundColor: "#FF3B30",
+                      borderRadius: 10,
+                      minWidth: 18,
+                      height: 18,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      paddingHorizontal: 4,
+                    }}
+                  >
+                    <Text style={{ color: "#fff", fontSize: 10, fontWeight: "bold" }}>
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </Link>
+
 
           </View>
 
@@ -236,7 +292,7 @@ export default function Index() {
             <Image
               source={
                 user?.foto_profil
-                  ? { uri: `${API_BASE_URL}/storage/${user.foto_profil}` } // jika dari server
+                  ? { uri: `${API_BASE_URL}/${user.foto_profil}` } // jika dari server
                   : require("../../assets/logo/Avatar.png") // jika kosong, pakai default
               }
               style={{ width: 50, height: 50, borderRadius: 16 }}

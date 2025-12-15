@@ -47,6 +47,7 @@ const Register = () => {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [fotoKtp, setFotoKtp] = useState<any>(null);
     const [fotoKk, setFotoKk] = useState<any>(null);
+    const [fotoProfil, setFotoProfil] = useState<any>(null);
 
     // ✅ Fungsi pilih gambar (kamera / galeri)
     // Fungsi pilih gambar (kamera / galeri)
@@ -113,6 +114,14 @@ const Register = () => {
                     uri: fotoKk.uri,
                     type: "image/jpeg",
                     name: "foto_kk.jpg",
+                } as any);
+            }
+
+            if (fotoProfil) {
+                formData.append("foto_profil", {
+                    uri: fotoProfil.uri,
+                    type: "image/jpeg",
+                    name: "foto_profil.jpg",
                 } as any);
             }
 
@@ -266,6 +275,35 @@ const Register = () => {
                     <Image
                         source={{ uri: fotoKk.uri }}
                         style={{ width: 120, height: 80, marginTop: 8, borderRadius: 8 }}
+                    />
+                )}
+
+                {/* Upload Foto Profil */}
+                <View className="flex-row w-full gap-2 mt-2">
+                    <TouchableOpacity
+                        onPress={() => pickImage(setFotoProfil, false)}
+                        className="items-center flex-1 p-3 border border-gray-400 rounded-lg"
+                    >
+                        <Text>{fotoProfil ? "📂 Ulangi Foto Profil" : "Upload Foto Profil"}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => pickImage(setFotoProfil, true)}
+                        className="items-center flex-1 p-3 border border-gray-400 rounded-lg"
+                    >
+                        <Text>📷 Kamera Profil</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {fotoProfil && (
+                    <Image
+                        source={{ uri: fotoProfil.uri }}
+                        style={{
+                            width: 100,
+                            height: 100,
+                            marginTop: 8,
+                            borderRadius: 50,
+                            alignSelf: "center",
+                        }}
                     />
                 )}
 

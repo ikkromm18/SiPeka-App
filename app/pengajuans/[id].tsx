@@ -4,7 +4,8 @@ import * as FileSystem from 'expo-file-system';
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Sharing from 'expo-sharing';
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, Linking, ScrollView, Text, TouchableOpacity, View } from "react-native";
+
 
 type FieldSurat = {
     id: number;
@@ -31,6 +32,25 @@ type PengajuanDetail = {
         nama_jenis: string;
     };
     data_pengajuans: DataPengajuan[];
+};
+
+const getFileUrl = (path: string) => `${API_BASE_URL}/${path}`;
+
+const getExt = (value: string) =>
+    value?.split(".").pop()?.toLowerCase() || "";
+
+const isImage = (ext: string) =>
+    ["jpg", "jpeg", "png", "webp"].includes(ext);
+
+const isPdf = (ext: string) => ext === "pdf";
+
+const isFile = (ext: string) =>
+    ["pdf", "doc", "docx", "xls", "xlsx", "zip"].includes(ext);
+
+
+const openFile = async (path: string) => {
+    const url = getFileUrl(path);
+    await Linking.openURL(url);
 };
 
 const downloadSurat = async (id: number) => {
@@ -136,7 +156,7 @@ export default function PengajuanDetail() {
                     Dibuat: {new Date(detail.created_at).toLocaleString()}
                 </Text>
 
-                <Text className="mb-2 text-lg font-semibold text-white">Data Isian:</Text>
+                {/* <Text className="mb-2 text-lg font-semibold text-white">Data Isian:</Text>
                 {detail.data_pengajuans.length === 0 ? (
                     <Text className="text-white">Tidak ada data tambahan.</Text>
                 ) : (
@@ -149,7 +169,71 @@ export default function PengajuanDetail() {
                             <Text className="text-white">{d.nilai}</Text>
                         </View>
                     ))
+                )} */}
+
+                <Text className="mb-2 text-lg font-semibold text-white">Data Isian:</Text>
+
+                {detail.data_pengajuans.length === 0 ? (
+                    <Text className="text-white">Tidak ada data tambahan.</Text>
+                ) : (
+                    detail.data_pengajuans.map((d) => {
+                        const ext = getExt(d.nilai);
+                        const fileUrl = getFileUrl(d.nilai);
+
+                        return (
+                            <View
+                                key={d.id}
+                                className="bg-[#245059] p-3 rounded-lg mb-2"
+                            >
+                                <Text className="mb-1 font-semibold text-white">
+                                    {d.field_surats?.nama_field}
+                                </Text>
+
+                                {/* IMAGE */}
+                                {isImage(ext) && (
+                                    <TouchableOpacity onPress={() => openFile(d.nilai)}>
+                                        <Image
+                                            source={{ uri: fileUrl }}
+                                            style={{ height: 200, borderRadius: 8 }}
+                                            resizeMode="cover"
+                                        />
+                                        <Text className="mt-1 text-xs text-gray-300">
+                                            Ketuk untuk melihat gambar
+                                        </Text>
+                                    </TouchableOpacity>
+                                )}
+
+                                {/* PDF */}
+                                {isPdf(ext) && (
+                                    <TouchableOpacity
+                                        onPress={() => openFile(d.nilai)}
+                                        className="mt-2 bg-[#03BA9B] p-2 rounded"
+                                    >
+                                        <Text className="text-white">Lihat PDF</Text>
+                                    </TouchableOpacity>
+                                )}
+
+                                {/* FILE LAIN */}
+                                {!isImage(ext) && !isPdf(ext) && isFile(ext) && (
+                                    <TouchableOpacity
+                                        onPress={() => openFile(d.nilai)}
+                                        className="p-2 mt-2 bg-gray-600 rounded"
+                                    >
+                                        <Text className="text-white">Download File</Text>
+                                    </TouchableOpacity>
+                                )}
+
+                                {/* TEXT */}
+                                {!isFile(ext) && (
+                                    <Text className="text-white">{d.nilai}</Text>
+                                )}
+                            </View>
+                        );
+                    })
                 )}
+
+
+
 
                 <TouchableOpacity
                     disabled={!isCompleted}

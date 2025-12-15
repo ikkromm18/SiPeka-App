@@ -33,6 +33,8 @@ type User = {
     tgl_lahir?: string;
     foto_ktp?: string;
     foto_kk?: string;
+    foto_profil?: string;
+
 };
 
 export default function EditProfile() {
@@ -41,6 +43,8 @@ export default function EditProfile() {
 
     const [fotoKtp, setFotoKtp] = useState<any>(null);
     const [fotoKk, setFotoKk] = useState<any>(null);
+    const [fotoProfil, setFotoProfil] = useState<any>(null);
+
 
     // ✅ Ambil data user dari API Laravel
     useEffect(() => {
@@ -67,8 +71,13 @@ export default function EditProfile() {
                 reset(userData);
 
                 // set foto
-                if (userData.foto_ktp) setFotoKtp({ uri: `${API_BASE_URL}/storage/${userData.foto_ktp}` });
-                if (userData.foto_kk) setFotoKk({ uri: `${API_BASE_URL}/storage/${userData.foto_kk}` });
+                if (userData.foto_ktp) setFotoKtp({ uri: `${API_BASE_URL}/${userData.foto_ktp}` });
+                if (userData.foto_kk) setFotoKk({ uri: `${API_BASE_URL}/${userData.foto_kk}` });
+                if (userData.foto_profil) {
+                    setFotoProfil({
+                        uri: `${API_BASE_URL}/${userData.foto_profil}`,
+                    });
+                }
 
             } catch (err: any) {
                 console.log("❌ Fetch user error:", err.response?.data || err.message);
@@ -151,6 +160,14 @@ export default function EditProfile() {
                     uri: fotoKk.uri,
                     type: "image/jpeg",
                     name: "foto_kk.jpg",
+                } as any);
+            }
+
+            if (fotoProfil?.uri) {
+                formData.append("foto_profil", {
+                    uri: fotoProfil.uri,
+                    type: "image/jpeg",
+                    name: "foto_profil.jpg",
                 } as any);
             }
 
@@ -257,6 +274,26 @@ export default function EditProfile() {
                     </Text>
                 </TouchableOpacity>
             </View>
+
+            {/* Foto Profil */}
+            <View className="items-center mb-6">
+                <View className="mb-4">
+                    <Text className="mb-1 text-[#18353D]">Foto Profile</Text>
+                    {fotoProfil?.uri && (
+                        <Image source={{ uri: fotoProfil.uri }} className="w-full h-40 mb-2 rounded-lg" />
+                    )}
+                    <TouchableOpacity
+                        className="p-3 bg-[#03B798] rounded-lg items-center"
+                        onPress={() => pickImage(setFotoProfil)}
+                    >
+                        <Text className="font-semibold text-white">
+                            {fotoProfil ? "Ubah Foto Profil" : "Upload Foto Profil"}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+
 
             {/* Tombol Simpan */}
             <TouchableOpacity
