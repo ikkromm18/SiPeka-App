@@ -1,4 +1,4 @@
-import API_BASE_URL from "@/config/api";
+import { API_BASE_URL } from "@/config/api";
 import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -77,6 +77,8 @@ const Login = () => {
                     placeholder="Email atau Username"
                     keyboardType="email-address"
                     autoCapitalize="none"
+                    style={{ color: "#000" }}
+                    placeholderTextColor="#9CA3AF"
                     value={email}
                     onChangeText={setEmail}
                 />
@@ -90,6 +92,8 @@ const Login = () => {
                     secureTextEntry={true}
                     value={password}
                     onChangeText={setPassword}
+                    style={{ color: "#000" }}
+                    placeholderTextColor="#9CA3AF"
                 />
             </View>
 

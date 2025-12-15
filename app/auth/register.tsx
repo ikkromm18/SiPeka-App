@@ -1,4 +1,4 @@
-import API_BASE_URL from "@/config/api";
+import { API_BASE_URL } from "@/config/api";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
@@ -15,6 +15,7 @@ import {
     View,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+"@/config/api";
 
 const Register = () => {
     const router = useRouter();
@@ -202,6 +203,8 @@ const Register = () => {
                             keyboardType={item.keyboardType as any}
                             secureTextEntry={item.secureTextEntry}
                             autoCapitalize="none"
+                            style={{ color: "#111827" }}
+                            selectionColor="#2563EB"
                             value={form[item.key as keyof typeof form]}
                             onChangeText={(text) => setForm({ ...form, [item.key]: text })}
                         />

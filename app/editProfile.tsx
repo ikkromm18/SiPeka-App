@@ -1,4 +1,4 @@
-import API_BASE_URL from "@/config/api";
+import { API_BASE_URL, IMAGE_BASE_URL } from "@/config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
@@ -15,6 +15,7 @@ import {
     View,
 } from "react-native";
 
+/* ================== TYPE ================== */
 type User = {
     name: string;
     email: string;
@@ -34,26 +35,36 @@ type User = {
     foto_ktp?: string;
     foto_kk?: string;
     foto_profil?: string;
-
 };
 
+type PhotoState = {
+    uri: string;
+    isLocal: boolean;
+};
+
+/* ================== COMPONENT ================== */
 export default function EditProfile() {
     const { control, handleSubmit, reset } = useForm<User>();
     const [loading, setLoading] = useState(false);
 
-    const [fotoKtp, setFotoKtp] = useState<any>(null);
-    const [fotoKk, setFotoKk] = useState<any>(null);
-    const [fotoProfil, setFotoProfil] = useState<any>(null);
+    const [fotoKtp, setFotoKtp] = useState<PhotoState | null>(null);
+    const [fotoKk, setFotoKk] = useState<PhotoState | null>(null);
+    const [fotoProfil, setFotoProfil] = useState<PhotoState | null>(null);
 
+    /* ================== PERMISSION ================== */
+    useEffect(() => {
+        ImagePicker.requestCameraPermissionsAsync();
+        ImagePicker.requestMediaLibraryPermissionsAsync();
+    }, []);
 
-    // ✅ Ambil data user dari API Laravel
+    /* ================== FETCH USER ================== */
     useEffect(() => {
         const fetchUser = async () => {
             try {
                 setLoading(true);
                 const token = await AsyncStorage.getItem("token");
                 if (!token) {
-                    Alert.alert("Error", "Token tidak ditemukan. Silakan login kembali.");
+                    Alert.alert("Error", "Token tidak ditemukan");
                     return;
                 }
 
@@ -64,24 +75,33 @@ export default function EditProfile() {
                     },
                 });
 
-                // cek apakah res.data punya key `user` atau langsung object
-                const userData = res.data.user ? res.data.user : res.data;
+                const userData = res.data.user ?? res.data;
 
-                // isi form
                 reset(userData);
 
-                // set foto
-                if (userData.foto_ktp) setFotoKtp({ uri: `${API_BASE_URL}/${userData.foto_ktp}` });
-                if (userData.foto_kk) setFotoKk({ uri: `${API_BASE_URL}/${userData.foto_kk}` });
-                if (userData.foto_profil) {
-                    setFotoProfil({
-                        uri: `${API_BASE_URL}/${userData.foto_profil}`,
+                if (userData.foto_ktp) {
+                    setFotoKtp({
+                        uri: `${IMAGE_BASE_URL}/${userData.foto_ktp}`,
+                        isLocal: false,
                     });
                 }
 
+                if (userData.foto_kk) {
+                    setFotoKk({
+                        uri: `${IMAGE_BASE_URL}/${userData.foto_kk}`,
+                        isLocal: false,
+                    });
+                }
+
+                if (userData.foto_profil) {
+                    setFotoProfil({
+                        uri: `${IMAGE_BASE_URL}/${userData.foto_profil}`,
+                        isLocal: false,
+                    });
+                }
             } catch (err: any) {
-                console.log("❌ Fetch user error:", err.response?.data || err.message);
-                Alert.alert("Error", "Gagal memuat data profil.");
+                console.log("Fetch user error:", err.response?.data || err.message);
+                Alert.alert("Error", "Gagal memuat profil");
             } finally {
                 setLoading(false);
             }
@@ -90,64 +110,63 @@ export default function EditProfile() {
         fetchUser();
     }, []);
 
-    // ✅ Fungsi pilih foto (kamera / galeri)
-    const pickImage = async (setter: any) => {
-        Alert.alert(
-            "Pilih Gambar",
-            "Ambil foto baru atau pilih dari galeri?",
-            [
-                {
-                    text: "Kamera",
-                    onPress: async () => {
-                        const result = await ImagePicker.launchCameraAsync({
-                            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                            quality: 0.7,
+    /* ================== PICK IMAGE ================== */
+    const pickImage = async (
+        setter: React.Dispatch<React.SetStateAction<PhotoState | null>>
+    ) => {
+        Alert.alert("Pilih Gambar", "Ambil foto baru atau pilih dari galeri?", [
+            {
+                text: "Kamera",
+                onPress: async () => {
+                    const result = await ImagePicker.launchCameraAsync({
+                        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                        quality: 0.7,
+                    });
+
+                    if (!result.canceled) {
+                        setter({
+                            uri: result.assets[0].uri,
+                            isLocal: true,
                         });
-                        if (!result.canceled) setter(result.assets[0]);
-                    },
+                    }
                 },
-                {
-                    text: "Galeri",
-                    onPress: async () => {
-                        const result = await ImagePicker.launchImageLibraryAsync({
-                            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                            quality: 0.7,
+            },
+            {
+                text: "Galeri",
+                onPress: async () => {
+                    const result = await ImagePicker.launchImageLibraryAsync({
+                        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                        quality: 0.7,
+                    });
+
+                    if (!result.canceled) {
+                        setter({
+                            uri: result.assets[0].uri,
+                            isLocal: true,
                         });
-                        if (!result.canceled) setter(result.assets[0]);
-                    },
+                    }
                 },
-                { text: "Batal", style: "cancel" },
-            ]
-        );
+            },
+            { text: "Batal", style: "cancel" },
+        ]);
     };
 
-
-    // ✅ Simpan perubahan
+    /* ================== SUBMIT ================== */
     const onSubmit = async (data: User) => {
         try {
             setLoading(true);
             const token = await AsyncStorage.getItem("token");
-            if (!token) {
-                Alert.alert("Error", "Token tidak ditemukan. Silakan login kembali.");
-                return;
-            }
+            if (!token) return;
 
-            if (!data.name || !data.email) {
-                Alert.alert("Error", "Nama dan Email wajib diisi.");
-                return;
-            }
+            const formData = new FormData();
 
-
-            let formData = new FormData();
-            Object.keys(data).forEach((key) => {
-                const value = (data as any)[key];
-                if (value) formData.append(key, value);
+            Object.entries(data).forEach(([key, value]) => {
+                if (value) formData.append(key, value as string);
             });
 
-            // override method jadi PUT
             formData.append("_method", "PUT");
 
-            if (fotoKtp?.uri) {
+            if (fotoKtp?.isLocal) {
                 formData.append("foto_ktp", {
                     uri: fotoKtp.uri,
                     type: "image/jpeg",
@@ -155,7 +174,7 @@ export default function EditProfile() {
                 } as any);
             }
 
-            if (fotoKk?.uri) {
+            if (fotoKk?.isLocal) {
                 formData.append("foto_kk", {
                     uri: fotoKk.uri,
                     type: "image/jpeg",
@@ -163,16 +182,13 @@ export default function EditProfile() {
                 } as any);
             }
 
-            if (fotoProfil?.uri) {
+            if (fotoProfil?.isLocal) {
                 formData.append("foto_profil", {
                     uri: fotoProfil.uri,
                     type: "image/jpeg",
                     name: "foto_profil.jpg",
                 } as any);
             }
-
-            console.log("Update Profile URL:", `${API_BASE_URL}/profile/update`);
-
 
             await axios.post(`${API_BASE_URL}/profile/update`, formData, {
                 headers: {
@@ -181,127 +197,94 @@ export default function EditProfile() {
                 },
             });
 
-
-            Alert.alert("Sukses", "Profil berhasil diperbarui ✅");
+            Alert.alert("Sukses", "Profil berhasil diperbarui");
         } catch (err: any) {
-            console.log("❌ Update error:", err.response?.data || err.message);
-            Alert.alert("Error", "Gagal memperbarui profil.");
+            console.log("Update error:", err.response?.data || err.message);
+            Alert.alert("Error", "Gagal memperbarui profil");
         } finally {
             setLoading(false);
         }
     };
 
-
+    /* ================== LOADING ================== */
     if (loading) {
         return (
-            <View className="items-center justify-center flex-1 bg-white">
+            <View className="items-center justify-center flex-1">
                 <ActivityIndicator size="large" color="#03B798" />
-                <Text className="mt-3 text-[#18353D]">Sedang memuat...</Text>
+                <Text>Memuat...</Text>
             </View>
         );
     }
 
+    /* ================== UI ================== */
     return (
-        <ScrollView className="flex-1 p-6 bg-white">
-            <Text className="mb-6 text-2xl font-bold text-center text-[#18353D]">
+        <ScrollView className="flex-1 p-6 pb-10 bg-white">
+            <Text className="mb-6 text-2xl font-bold text-center">
                 Edit Profil
             </Text>
 
-            {/* Input Fields */}
             {[
-                { name: "name", label: "Nama", placeholder: "Masukkan nama" },
-                { name: "email", label: "Email", placeholder: "Masukkan email" },
-                { name: "nik", label: "NIK", placeholder: "Masukkan NIK" },
-                { name: "no_kk", label: "No KK", placeholder: "Masukkan nomor KK" },
-                { name: "nama_kepala_keluarga", label: "Nama Kepala Keluarga", placeholder: "Masukkan nama KK" },
-                { name: "alamat", label: "Alamat", placeholder: "Masukkan alamat" },
-                { name: "desa", label: "Desa", placeholder: "Masukkan desa" },
-                { name: "rt", label: "RT", placeholder: "RT" },
-                { name: "rw", label: "RW", placeholder: "RW" },
-                { name: "kode_pos", label: "Kode Pos", placeholder: "Masukkan kode pos" },
-                { name: "dusun", label: "Dusun", placeholder: "Masukkan dusun" },
-                { name: "nomor_hp", label: "Nomor HP", placeholder: "Masukkan nomor HP" },
-                { name: "pekerjaan", label: "Pekerjaan", placeholder: "Masukkan pekerjaan" },
-                { name: "tempat_lahir", label: "Tempat Lahir", placeholder: "Masukkan tempat lahir" },
-                { name: "tgl_lahir", label: "Tanggal Lahir", placeholder: "YYYY-MM-DD" },
-            ].map((field) => (
-                <View key={field.name} className="mb-4">
-                    <Text className="mb-1 text-[#18353D]">{field.label}</Text>
+                ["name", "Nama"],
+                ["email", "Email"],
+                ["nik", "NIK"],
+                ["no_kk", "No KK"],
+            ].map(([name, label]) => (
+                <View key={name} className="mb-4">
+                    <Text>{label}</Text>
                     <Controller
                         control={control}
-                        name={field.name as keyof User}
+                        name={name as keyof User}
                         render={({ field: { onChange, value } }) => (
                             <TextInput
-                                className="w-full p-3 border rounded-lg border-gray-300 text-[#18353D]"
+                                className="p-3 border rounded"
                                 value={value}
                                 onChangeText={onChange}
-                                placeholder={field.placeholder}
-                                placeholderTextColor="#9CA3AF"
                             />
                         )}
                     />
                 </View>
             ))}
 
-            {/* Foto KTP */}
+            {/* FOTO KTP */}
             <View className="mb-4">
-                <Text className="mb-1 text-[#18353D]">Foto KTP</Text>
-                {fotoKtp?.uri && (
-                    <Image source={{ uri: fotoKtp.uri }} className="w-full h-40 mb-2 rounded-lg" />
+                {fotoKtp && (
+                    <Image source={{ uri: fotoKtp.uri }} className="h-40 mb-2 rounded" />
                 )}
-                <TouchableOpacity
-                    className="p-3 bg-[#03B798] rounded-lg items-center"
-                    onPress={() => pickImage(setFotoKtp)}
-                >
-                    <Text className="font-semibold text-white">
-                        {fotoKtp ? "Ubah Foto KTP" : "Upload Foto KTP"}
+                <TouchableOpacity onPress={() => pickImage(setFotoKtp)}>
+                    <Text className="p-3 text-center text-white bg-green-500 rounded">
+                        Upload Foto KTP
                     </Text>
                 </TouchableOpacity>
             </View>
 
-            {/* Foto KK */}
+            {/* FOTO KK */}
             <View className="mb-4">
-                <Text className="mb-1 text-[#18353D]">Foto KK</Text>
-                {fotoKk?.uri && (
-                    <Image source={{ uri: fotoKk.uri }} className="w-full h-40 mb-2 rounded-lg" />
+                {fotoKk && (
+                    <Image source={{ uri: fotoKk.uri }} className="h-40 mb-2 rounded" />
                 )}
-                <TouchableOpacity
-                    className="p-3 bg-[#03B798] rounded-lg items-center"
-                    onPress={() => pickImage(setFotoKk)}
-                >
-                    <Text className="font-semibold text-white">
-                        {fotoKk ? "Ubah Foto KK" : "Upload Foto KK"}
+                <TouchableOpacity onPress={() => pickImage(setFotoKk)}>
+                    <Text className="p-3 text-center text-white bg-green-500 rounded">
+                        Upload Foto KK
                     </Text>
                 </TouchableOpacity>
             </View>
 
-            {/* Foto Profil */}
-            <View className="items-center mb-6">
-                <View className="mb-4">
-                    <Text className="mb-1 text-[#18353D]">Foto Profile</Text>
-                    {fotoProfil?.uri && (
-                        <Image source={{ uri: fotoProfil.uri }} className="w-full h-40 mb-2 rounded-lg" />
-                    )}
-                    <TouchableOpacity
-                        className="p-3 bg-[#03B798] rounded-lg items-center"
-                        onPress={() => pickImage(setFotoProfil)}
-                    >
-                        <Text className="font-semibold text-white">
-                            {fotoProfil ? "Ubah Foto Profil" : "Upload Foto Profil"}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
+            {/* FOTO PROFIL */}
+            <View className="mb-6">
+                {fotoProfil && (
+                    <Image source={{ uri: fotoProfil.uri }} className="h-40 mb-2 rounded" />
+                )}
+                <TouchableOpacity onPress={() => pickImage(setFotoProfil)}>
+                    <Text className="p-3 text-center text-white bg-green-500 rounded">
+                        Upload Foto Profil
+                    </Text>
+                </TouchableOpacity>
             </View>
 
-
-
-            {/* Tombol Simpan */}
-            <TouchableOpacity
-                className="w-full p-4 mb-14 mt-4 bg-[#18353D] rounded-lg items-center"
-                activeOpacity={0.8}
-                onPress={handleSubmit(onSubmit)}
-            >
-                <Text className="text-base font-bold text-white">💾 Simpan Perubahan</Text>
+            <TouchableOpacity onPress={handleSubmit(onSubmit)}>
+                <Text className="p-4 mb-16 text-center text-white bg-black rounded">
+                    Simpan Perubahan
+                </Text>
             </TouchableOpacity>
         </ScrollView>
     );

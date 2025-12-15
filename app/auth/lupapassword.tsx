@@ -1,4 +1,4 @@
-import API_BASE_URL from '@/config/api';
+import { API_BASE_URL } from '@/config/api';
 import axios from 'axios';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';

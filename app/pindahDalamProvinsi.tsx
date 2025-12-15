@@ -1,4 +1,4 @@
-import API_BASE_URL from "@/config/api";
+import { API_BASE_URL } from "@/config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
@@ -80,7 +80,7 @@ const PindahDalamProvinsi = () => {
         fetchFields();
     }, []);
 
-    // 🔹 Fungsi untuk memilih file
+    // 🔹 Pilih file
     const handlePickFile = async (fieldName: string) => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
@@ -88,10 +88,10 @@ const PindahDalamProvinsi = () => {
                 copyToCacheDirectory: true,
             });
 
-            if (!result.canceled && result.assets && result.assets.length > 0) {
+            if (!result.canceled && result.assets?.length) {
                 const file = result.assets[0];
-                setForm((prevForm) => ({
-                    ...prevForm,
+                setForm((prev) => ({
+                    ...prev,
                     [fieldName]: {
                         uri: file.uri,
                         name: file.name,
@@ -104,7 +104,7 @@ const PindahDalamProvinsi = () => {
         }
     };
 
-    // 🔹 Kirim data pengajuan
+    // 🔹 Submit
     const handleSubmit = async () => {
         if (!user) {
             Alert.alert("❌ Error", "User tidak ditemukan");
@@ -122,21 +122,18 @@ const PindahDalamProvinsi = () => {
             formData.append("alamat", user.alamat);
             formData.append("jenis_surat_id", "1");
 
-            // Tambahkan fields
             for (const field of fields) {
                 const value = form[field.nama_field];
-                if (value) {
-                    if (value.uri) {
-                        // File upload
-                        formData.append(`fields[${field.id}]`, {
-                            uri: value.uri,
-                            name: value.name || "upload",
-                            type: value.mimeType || "application/octet-stream",
-                        } as any);
-                    } else {
-                        // Text input / select
-                        formData.append(`fields[${field.id}]`, value);
-                    }
+                if (!value) continue;
+
+                if (value.uri) {
+                    formData.append(`fields[${field.id}]`, {
+                        uri: value.uri,
+                        name: value.name || "upload",
+                        type: value.mimeType || "application/octet-stream",
+                    } as any);
+                } else {
+                    formData.append(`fields[${field.id}]`, value);
                 }
             }
 
@@ -155,33 +152,33 @@ const PindahDalamProvinsi = () => {
 
             if (res.ok) {
                 Alert.alert("✅ Berhasil", "Pengajuan berhasil dikirim!");
-                console.log("Response:", data);
                 router.push("/(tabs)/history");
             } else {
                 Alert.alert("❌ Gagal", data.message || "Terjadi kesalahan");
             }
         } catch (error) {
             setLoading(false);
-            console.error("❌ Error submit:", error);
             Alert.alert("❌ Error", "Tidak bisa mengirim data");
         }
     };
 
     return (
         <ScrollView className="flex-1 p-4 bg-white">
-            <Text className="mb-4 text-xl font-bold">Form Pindah Dalam Provinsi</Text>
+            <Text className="mb-4 text-xl font-bold">
+                Form Pindah Dalam Provinsi
+            </Text>
 
             {fields.map((item) => (
                 <View key={item.id} className="mb-4">
                     <Text className="mb-1 text-base text-gray-700">
-                        {item.nama_field}{" "}
+                        {item.nama_field}
                         {item.is_required === 1 && (
-                            <Text className="text-red-500">*</Text>
+                            <Text className="text-red-500"> *</Text>
                         )}
                     </Text>
 
+                    {/* SELECT */}
                     {item.tipe_field === "select" && item.options ? (
-                        // 🔹 SELECT
                         <View className="border border-gray-300 rounded-lg">
                             <Picker
                                 selectedValue={form[item.nama_field] || ""}
@@ -193,17 +190,13 @@ const PindahDalamProvinsi = () => {
                                     label={`Pilih ${item.nama_field}`}
                                     value=""
                                 />
-                                {item.options.map((opt: string, index: number) => (
-                                    <Picker.Item
-                                        key={index}
-                                        label={opt}
-                                        value={opt}
-                                    />
+                                {item.options.map((opt, i) => (
+                                    <Picker.Item key={i} label={opt} value={opt} />
                                 ))}
                             </Picker>
                         </View>
                     ) : item.tipe_field === "file" ? (
-                        // 🔹 FILE PICKER
+                        /* FILE */
                         <TouchableOpacity
                             onPress={() => handlePickFile(item.nama_field)}
                             className="w-full p-4 border border-gray-300 rounded-lg bg-gray-50"
@@ -215,25 +208,29 @@ const PindahDalamProvinsi = () => {
                             </Text>
                         </TouchableOpacity>
                     ) : (
-                        // 🔹 TEXT INPUT
+                        /* TEXT INPUT (FIX APK) */
                         <TextInput
                             className="w-full p-4 text-base border border-gray-300 rounded-lg"
                             placeholder={`Masukkan ${item.nama_field}`}
+                            placeholderTextColor="#9CA3AF"
                             keyboardType={
                                 item.tipe_field === "number"
-                                    ? "numeric"
+                                    ? "number-pad"
                                     : "default"
                             }
-                            secureTextEntry={
+                            secureTextEntry={item.tipe_field === "password"}
+                            textContentType={
                                 item.tipe_field === "password"
+                                    ? "newPassword"
+                                    : "none"
                             }
                             autoCapitalize="none"
+                            autoCorrect={false}
+                            selectionColor="#2563EB"
+                            style={{ color: "#111827" }}
                             value={form[item.nama_field] || ""}
                             onChangeText={(text) =>
-                                setForm({
-                                    ...form,
-                                    [item.nama_field]: text,
-                                })
+                                setForm({ ...form, [item.nama_field]: text })
                             }
                         />
                     )}

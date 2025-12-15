@@ -1,4 +1,4 @@
-import API_BASE_URL from "@/config/api";
+import { API_BASE_URL } from "@/config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
@@ -6,7 +6,15 @@ import axios from "axios";
 import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Alert, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+    Alert,
+    Platform,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
 type FieldSurat = {
     id: number;
@@ -30,10 +38,9 @@ const DispenNikah = () => {
     const [loading, setLoading] = useState(false);
     const [user, setUser] = useState<User | null>(null);
     const [showDatePicker, setShowDatePicker] = useState<{ [key: string]: boolean }>({});
-
     const router = useRouter();
 
-    // ambil data user dari API
+    // 🔹 Ambil user
     useEffect(() => {
         const fetchUser = async () => {
             const token = await AsyncStorage.getItem("token");
@@ -51,11 +58,10 @@ const DispenNikah = () => {
                 console.error("❌ Error ambil user:", err);
             }
         };
-
         fetchUser();
     }, []);
 
-    // ambil field form dari API
+    // 🔹 Ambil field
     useEffect(() => {
         const fetchFields = async () => {
             try {
@@ -72,11 +78,10 @@ const DispenNikah = () => {
                 console.error("❌ Error fetching fields:", error);
             }
         };
-
         fetchFields();
     }, []);
 
-    // 📂 pilih file dengan DocumentPicker
+    // 📂 File picker
     const handlePickFile = async (fieldName: string) => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
@@ -84,28 +89,32 @@ const DispenNikah = () => {
                 copyToCacheDirectory: true,
             });
 
-            if (result.canceled) return;
+            if (result.canceled || !result.assets?.length) return;
 
             const file = result.assets[0];
-            setForm((prevForm) => ({
-                ...prevForm,
-                [fieldName]: file,
+            setForm((prev) => ({
+                ...prev,
+                [fieldName]: {
+                    uri: file.uri,
+                    name: file.name,
+                    mimeType: file.mimeType,
+                },
             }));
         } catch (error) {
             console.error("❌ Error picking file:", error);
         }
     };
 
-    // 📅 pilih tanggal
-    const handleDateChange = (fieldName: string, event: any, selectedDate?: Date) => {
+    // 📅 Date picker
+    const handleDateChange = (fieldName: string, _: any, selectedDate?: Date) => {
         setShowDatePicker((prev) => ({ ...prev, [fieldName]: false }));
         if (selectedDate) {
-            const formatted = selectedDate.toISOString().split("T")[0]; // format YYYY-MM-DD
+            const formatted = selectedDate.toISOString().split("T")[0];
             setForm((prev) => ({ ...prev, [fieldName]: formatted }));
         }
     };
 
-    // 🚀 kirim data ke API
+    // 🚀 Submit
     const handleSubmit = async () => {
         if (!user) {
             Alert.alert("❌ Error", "User tidak ditemukan");
@@ -117,25 +126,23 @@ const DispenNikah = () => {
             const token = await AsyncStorage.getItem("token");
             const formData = new FormData();
 
-            // Tambahkan data user
             formData.append("nik", user.nik);
             formData.append("name", user.name);
             formData.append("email", user.email);
             formData.append("alamat", user.alamat);
             formData.append("jenis_surat_id", "3");
 
-            // Tambahkan field dari API
             fields.forEach((f) => {
                 const value = form[f.nama_field];
 
-                if (f.tipe_field === "file" && value && value.uri) {
+                if (f.tipe_field === "file" && value?.uri) {
                     formData.append(`fields[${f.id}]`, {
                         uri: value.uri,
                         name: value.name || `file_${f.id}`,
                         type: value.mimeType || "application/octet-stream",
                     } as any);
-                } else {
-                    formData.append(`fields[${f.id}]`, value || "");
+                } else if (value) {
+                    formData.append(`fields[${f.id}]`, value);
                 }
             });
 
@@ -154,14 +161,12 @@ const DispenNikah = () => {
 
             if (res.ok) {
                 Alert.alert("✅ Berhasil", "Pengajuan berhasil dikirim!");
-                console.log("Response:", data);
                 router.push("/(tabs)/history");
             } else {
                 Alert.alert("❌ Gagal", data.message || "Terjadi kesalahan");
             }
         } catch (error) {
             setLoading(false);
-            console.error("❌ Error submit:", error);
             Alert.alert("❌ Error", "Tidak bisa mengirim data");
         }
     };
@@ -173,11 +178,13 @@ const DispenNikah = () => {
             {fields.map((item) => (
                 <View key={item.id} className="mb-4">
                     <Text className="mb-1 text-base text-gray-700">
-                        {item.nama_field}{" "}
-                        {item.is_required === 1 && <Text className="text-red-500">*</Text>}
+                        {item.nama_field}
+                        {item.is_required === 1 && (
+                            <Text className="text-red-500"> *</Text>
+                        )}
                     </Text>
 
-                    {/* === Input Berdasarkan Tipe === */}
+                    {/* FILE */}
                     {item.tipe_field === "file" ? (
                         <TouchableOpacity
                             onPress={() => handlePickFile(item.nama_field)}
@@ -190,6 +197,7 @@ const DispenNikah = () => {
                             </Text>
                         </TouchableOpacity>
                     ) : item.tipe_field === "select" && item.options ? (
+                        /* SELECT */
                         <View className="border border-gray-300 rounded-lg">
                             <Picker
                                 selectedValue={form[item.nama_field] || ""}
@@ -198,12 +206,13 @@ const DispenNikah = () => {
                                 }
                             >
                                 <Picker.Item label={`Pilih ${item.nama_field}`} value="" />
-                                {item.options.map((opt: string, index: number) => (
-                                    <Picker.Item key={index} label={opt} value={opt} />
+                                {item.options.map((opt, i) => (
+                                    <Picker.Item key={i} label={opt} value={opt} />
                                 ))}
                             </Picker>
                         </View>
                     ) : item.tipe_field === "date" ? (
+                        /* DATE */
                         <>
                             <TouchableOpacity
                                 className="p-4 border border-gray-300 rounded-lg bg-gray-50"
@@ -217,7 +226,7 @@ const DispenNikah = () => {
                                 <Text className="text-gray-700">
                                     {form[item.nama_field]
                                         ? `📅 ${form[item.nama_field]}`
-                                        : `Pilih tanggal untuk ${item.nama_field}`}
+                                        : `Pilih tanggal ${item.nama_field}`}
                                 </Text>
                             </TouchableOpacity>
 
@@ -230,17 +239,33 @@ const DispenNikah = () => {
                                     }
                                     mode="date"
                                     display={Platform.OS === "ios" ? "spinner" : "default"}
-                                    onChange={(e, d) => handleDateChange(item.nama_field, e, d!)}
+                                    onChange={(e, d) =>
+                                        handleDateChange(item.nama_field, e, d!)
+                                    }
                                 />
                             )}
                         </>
                     ) : (
+                        /* TEXT INPUT (FIX APK) */
                         <TextInput
                             className="w-full p-4 text-base border border-gray-300 rounded-lg"
                             placeholder={`Masukkan ${item.nama_field}`}
-                            keyboardType={item.tipe_field === "number" ? "numeric" : "default"}
+                            placeholderTextColor="#9CA3AF"
+                            keyboardType={
+                                item.tipe_field === "number"
+                                    ? "number-pad"
+                                    : "default"
+                            }
                             secureTextEntry={item.tipe_field === "password"}
+                            textContentType={
+                                item.tipe_field === "password"
+                                    ? "newPassword"
+                                    : "none"
+                            }
                             autoCapitalize="none"
+                            autoCorrect={false}
+                            selectionColor="#2563EB"
+                            style={{ color: "#111827" }}
                             value={form[item.nama_field] || ""}
                             onChangeText={(text) =>
                                 setForm({ ...form, [item.nama_field]: text })

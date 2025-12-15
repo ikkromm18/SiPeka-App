@@ -1,4 +1,4 @@
-import API_BASE_URL from "@/config/api";
+import { API_BASE_URL } from "@/config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
@@ -22,7 +22,7 @@ type FieldSurat = {
     nama_field: string;
     tipe_field: string;
     is_required: number;
-    options?: string[]; // jika field tipe select, ambil array opsinya dari API
+    options?: string[];
 };
 
 type User = {
@@ -40,7 +40,9 @@ const IjinHajatan = () => {
     const [showDatePicker, setShowDatePicker] = useState<{ [key: string]: boolean }>({});
     const router = useRouter();
 
-    // ambil data user login dari API
+    // =========================
+    // GET USER
+    // =========================
     useEffect(() => {
         const fetchUser = async () => {
             const token = await AsyncStorage.getItem("token");
@@ -62,7 +64,9 @@ const IjinHajatan = () => {
         fetchUser();
     }, []);
 
-    // ambil daftar field dari API
+    // =========================
+    // GET FIELDS
+    // =========================
     useEffect(() => {
         const fetchFields = async () => {
             try {
@@ -83,60 +87,60 @@ const IjinHajatan = () => {
         fetchFields();
     }, []);
 
-    // fungsi untuk memilih file
+    // =========================
+    // PICK FILE
+    // =========================
     const handlePickFile = async (fieldName: string) => {
-        try {
-            const result = await DocumentPicker.getDocumentAsync({
-                type: "*/*",
-                copyToCacheDirectory: true,
-            });
+        const result = await DocumentPicker.getDocumentAsync({
+            type: "*/*",
+            copyToCacheDirectory: true,
+        });
 
-            if (result.canceled) return;
+        if (result.canceled) return;
 
-            const file = result.assets[0];
-            setForm((prevForm) => ({
-                ...prevForm,
-                [fieldName]: file,
-            }));
-        } catch (error) {
-            console.error("❌ Error picking file:", error);
-        }
+        const file = result.assets[0];
+        setForm((prev) => ({ ...prev, [fieldName]: file }));
     };
 
-    // fungsi untuk memilih tanggal
-    const handleDateChange = (fieldName: string, event: any, selectedDate?: Date) => {
+    // =========================
+    // PICK DATE
+    // =========================
+    const handleDateChange = (fieldName: string, _: any, date?: Date) => {
         setShowDatePicker((prev) => ({ ...prev, [fieldName]: false }));
-        if (selectedDate) {
-            const formatted = selectedDate.toISOString().split("T")[0]; // format YYYY-MM-DD
-            setForm((prev) => ({ ...prev, [fieldName]: formatted }));
+        if (date) {
+            setForm((prev) => ({
+                ...prev,
+                [fieldName]: date.toISOString().split("T")[0],
+            }));
         }
     };
 
-    // submit data ke server
+    // =========================
+    // SUBMIT
+    // =========================
     const handleSubmit = async () => {
         if (!user) {
-            Alert.alert("❌ Error", "User tidak ditemukan");
+            Alert.alert("Error", "User tidak ditemukan");
             return;
         }
 
         try {
             setLoading(true);
             const token = await AsyncStorage.getItem("token");
-
             const formData = new FormData();
 
-            // 🧍 Data user
+            // user data
             formData.append("nik", user.nik);
             formData.append("name", user.name);
             formData.append("email", user.email);
             formData.append("alamat", user.alamat);
             formData.append("jenis_surat_id", "4");
 
-            // 🧾 Tambahkan field dinamis sesuai API
+            // dynamic fields
             fields.forEach((f) => {
                 const value = form[f.nama_field];
 
-                if (f.tipe_field === "file" && value && value.uri) {
+                if (f.tipe_field === "file" && value?.uri) {
                     formData.append(`fields[${f.id}]`, {
                         uri: value.uri,
                         name: value.name || `file_${f.id}`,
@@ -152,7 +156,7 @@ const IjinHajatan = () => {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     Accept: "application/json",
-                    "Content-Type": "multipart/form-data",
+                    // ❌ JANGAN SET Content-Type
                 },
                 body: formData,
             });
@@ -161,18 +165,21 @@ const IjinHajatan = () => {
             setLoading(false);
 
             if (res.ok) {
-                Alert.alert("✅ Berhasil", "Pengajuan berhasil dikirim!");
+                Alert.alert("Berhasil", "Pengajuan berhasil dikirim");
                 router.push("/(tabs)/history");
             } else {
-                Alert.alert("❌ Gagal", data.message || "Terjadi kesalahan");
+                Alert.alert("Gagal", data.message || "Terjadi kesalahan");
             }
-        } catch (error) {
+        } catch (err) {
             setLoading(false);
-            console.error("❌ Error submit:", error);
-            Alert.alert("❌ Error", "Tidak bisa mengirim data");
+            Alert.alert("Error", "Gagal mengirim data");
+            console.error(err);
         }
     };
 
+    // =========================
+    // UI
+    // =========================
     return (
         <ScrollView className="flex-1 p-4 bg-white">
             <Text className="mb-4 text-xl font-bold">
@@ -182,13 +189,12 @@ const IjinHajatan = () => {
             {fields.map((item) => (
                 <View key={item.id} className="mb-4">
                     <Text className="mb-1 text-base text-gray-700">
-                        {item.nama_field}{" "}
+                        {item.nama_field}
                         {item.is_required === 1 && (
-                            <Text className="text-red-500">*</Text>
+                            <Text className="text-red-500"> *</Text>
                         )}
                     </Text>
 
-                    {/* === Input Berdasarkan Tipe Field === */}
                     {item.tipe_field === "file" ? (
                         <TouchableOpacity
                             onPress={() => handlePickFile(item.nama_field)}
@@ -197,20 +203,20 @@ const IjinHajatan = () => {
                             <Text className="text-gray-700">
                                 {form[item.nama_field]?.name
                                     ? `📄 ${form[item.nama_field].name}`
-                                    : `Pilih file untuk ${item.nama_field}`}
+                                    : `Pilih file`}
                             </Text>
                         </TouchableOpacity>
                     ) : item.tipe_field === "select" && item.options ? (
                         <View className="border border-gray-300 rounded-lg">
                             <Picker
-                                selectedValue={form[item.nama_field] || ""}
-                                onValueChange={(value) =>
-                                    setForm({ ...form, [item.nama_field]: value })
+                                selectedValue={form[item.nama_field]}
+                                onValueChange={(v) =>
+                                    setForm({ ...form, [item.nama_field]: v })
                                 }
                             >
-                                <Picker.Item label={`Pilih ${item.nama_field}`} value="" />
-                                {item.options.map((opt, idx) => (
-                                    <Picker.Item key={idx} label={opt} value={opt} />
+                                <Picker.Item label="Pilih" value="" />
+                                {item.options.map((opt, i) => (
+                                    <Picker.Item key={i} label={opt} value={opt} />
                                 ))}
                             </Picker>
                         </View>
@@ -219,34 +225,32 @@ const IjinHajatan = () => {
                             <TouchableOpacity
                                 className="p-4 border border-gray-300 rounded-lg bg-gray-50"
                                 onPress={() =>
-                                    setShowDatePicker((prev) => ({
-                                        ...prev,
+                                    setShowDatePicker((p) => ({
+                                        ...p,
                                         [item.nama_field]: true,
                                     }))
                                 }
                             >
                                 <Text className="text-gray-700">
-                                    {form[item.nama_field]
-                                        ? `📅 ${form[item.nama_field]}`
-                                        : `Pilih tanggal untuk ${item.nama_field}`}
+                                    {form[item.nama_field] || "Pilih tanggal"}
                                 </Text>
                             </TouchableOpacity>
 
                             {showDatePicker[item.nama_field] && (
                                 <DateTimePicker
-                                    value={
-                                        form[item.nama_field]
-                                            ? new Date(form[item.nama_field])
-                                            : new Date()
-                                    }
+                                    value={new Date()}
                                     mode="date"
                                     display={Platform.OS === "ios" ? "spinner" : "default"}
-                                    onChange={(e, d) => handleDateChange(item.nama_field, e, d!)}
+                                    onChange={(e, d) =>
+                                        handleDateChange(item.nama_field, e, d!)
+                                    }
                                 />
                             )}
                         </>
                     ) : (
                         <TextInput
+                            style={{ color: "#000" }} // ✅ FIX RELEASE
+                            placeholderTextColor="#9CA3AF" // ✅ FIX PLACEHOLDER
                             className="w-full p-4 text-base border border-gray-300 rounded-lg"
                             placeholder={`Masukkan ${item.nama_field}`}
                             keyboardType={
@@ -255,8 +259,8 @@ const IjinHajatan = () => {
                             secureTextEntry={item.tipe_field === "password"}
                             autoCapitalize="none"
                             value={form[item.nama_field] || ""}
-                            onChangeText={(text) =>
-                                setForm({ ...form, [item.nama_field]: text })
+                            onChangeText={(t) =>
+                                setForm({ ...form, [item.nama_field]: t })
                             }
                         />
                     )}
@@ -264,9 +268,9 @@ const IjinHajatan = () => {
             ))}
 
             <TouchableOpacity
-                onPress={handleSubmit}
                 disabled={loading}
-                className={`w-full p-4 mt-4 mb-10 rounded-lg ${loading ? "bg-gray-400" : "bg-blue-600"
+                onPress={handleSubmit}
+                className={`p-4 mt-6 rounded-lg ${loading ? "bg-gray-400" : "bg-blue-600"
                     }`}
             >
                 <Text className="font-bold text-center text-white">

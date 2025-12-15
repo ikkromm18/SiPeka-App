@@ -1,4 +1,4 @@
-import API_BASE_URL from '@/config/api';
+import { API_BASE_URL, IMAGE_BASE_URL } from '@/config/api';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
@@ -119,7 +119,7 @@ const Profile = () => {
                             <Image
                                 source={{
                                     uri: user?.foto_profil
-                                        ? `${API_BASE_URL}/${user.foto_profil}`
+                                        ? `${IMAGE_BASE_URL}/${user.foto_profil}`
                                         : 'https://i.pinimg.com/736x/76/f3/f3/76f3f3007969fd3b6db21c744e1ef289.jpg',
                                 }}
                                 className="rounded-full w-28 h-28 border-4 border-[#03BA9B]"

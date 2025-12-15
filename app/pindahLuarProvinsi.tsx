@@ -1,11 +1,18 @@
-import API_BASE_URL from "@/config/api";
+import { API_BASE_URL } from "@/config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+    Alert,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
 type FieldSurat = {
     id: number;
@@ -30,7 +37,7 @@ const PindahLuarProvinsi = () => {
     const [user, setUser] = useState<User | null>(null);
     const router = useRouter();
 
-    // ambil data user dari API
+    // 🔹 Ambil user login
     useEffect(() => {
         const fetchUser = async () => {
             const token = await AsyncStorage.getItem("token");
@@ -51,7 +58,7 @@ const PindahLuarProvinsi = () => {
         fetchUser();
     }, []);
 
-    // ambil field surat dari API
+    // 🔹 Ambil field surat
     useEffect(() => {
         const fetchFields = async () => {
             try {
@@ -71,7 +78,7 @@ const PindahLuarProvinsi = () => {
         fetchFields();
     }, []);
 
-    // pilih file
+    // 🔹 Pilih file
     const handlePickFile = async (fieldName: string) => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
@@ -79,19 +86,23 @@ const PindahLuarProvinsi = () => {
                 copyToCacheDirectory: true,
             });
 
-            if (result.canceled) return;
+            if (result.canceled || !result.assets?.length) return;
 
             const file = result.assets[0];
-            setForm((prevForm) => ({
-                ...prevForm,
-                [fieldName]: file,
+            setForm((prev) => ({
+                ...prev,
+                [fieldName]: {
+                    uri: file.uri,
+                    name: file.name,
+                    mimeType: file.mimeType,
+                },
             }));
         } catch (error) {
             console.error("❌ Error picking file:", error);
         }
     };
 
-    // kirim data form
+    // 🔹 Submit
     const handleSubmit = async () => {
         if (!user) {
             Alert.alert("❌ Error", "User tidak ditemukan");
@@ -103,28 +114,23 @@ const PindahLuarProvinsi = () => {
             const token = await AsyncStorage.getItem("token");
 
             const formData = new FormData();
-
-            // 🔹 Data user
             formData.append("nik", user.nik);
             formData.append("name", user.name);
             formData.append("email", user.email);
             formData.append("alamat", user.alamat);
             formData.append("jenis_surat_id", "2");
 
-            // 🔹 Field dinamis
             fields.forEach((f) => {
                 const value = form[f.nama_field];
 
-                if (f.tipe_field === "file" && value && value.uri) {
-                    // Jika field adalah file
+                if (f.tipe_field === "file" && value?.uri) {
                     formData.append(`fields[${f.id}]`, {
                         uri: value.uri,
                         name: value.name || `file_${f.id}`,
                         type: value.mimeType || "application/octet-stream",
                     } as any);
-                } else {
-                    // Jika field biasa (text, number, select)
-                    formData.append(`fields[${f.id}]`, value || "");
+                } else if (value) {
+                    formData.append(`fields[${f.id}]`, value);
                 }
             });
 
@@ -143,31 +149,32 @@ const PindahLuarProvinsi = () => {
 
             if (res.ok) {
                 Alert.alert("✅ Berhasil", "Pengajuan berhasil dikirim!");
-                console.log("Response:", data);
                 router.push("/(tabs)/history");
             } else {
                 Alert.alert("❌ Gagal", data.message || "Terjadi kesalahan");
             }
         } catch (error) {
             setLoading(false);
-            console.error("❌ Error submit:", error);
             Alert.alert("❌ Error", "Tidak bisa mengirim data");
         }
     };
 
-
     return (
         <ScrollView className="flex-1 p-4 bg-white">
-            <Text className="mb-4 text-xl font-bold">Form Pindah Luar Provinsi</Text>
+            <Text className="mb-4 text-xl font-bold">
+                Form Pindah Luar Provinsi
+            </Text>
 
             {fields.map((item) => (
                 <View key={item.id} className="mb-4">
                     <Text className="mb-1 text-base text-gray-700">
-                        {item.nama_field}{" "}
-                        {item.is_required === 1 && <Text className="text-red-500">*</Text>}
+                        {item.nama_field}
+                        {item.is_required === 1 && (
+                            <Text className="text-red-500"> *</Text>
+                        )}
                     </Text>
 
-                    {/* === INPUT BERDASARKAN TIPE FIELD === */}
+                    {/* SELECT */}
                     {item.tipe_field === "select" && item.options ? (
                         <View className="border border-gray-300 rounded-lg">
                             <Picker
@@ -176,13 +183,21 @@ const PindahLuarProvinsi = () => {
                                     setForm({ ...form, [item.nama_field]: value })
                                 }
                             >
-                                <Picker.Item label={`Pilih ${item.nama_field}`} value="" />
-                                {item.options.map((opt: string, index: number) => (
-                                    <Picker.Item key={index} label={opt} value={opt} />
+                                <Picker.Item
+                                    label={`Pilih ${item.nama_field}`}
+                                    value=""
+                                />
+                                {item.options.map((opt, index) => (
+                                    <Picker.Item
+                                        key={index}
+                                        label={opt}
+                                        value={opt}
+                                    />
                                 ))}
                             </Picker>
                         </View>
                     ) : item.tipe_field === "file" ? (
+                        /* FILE */
                         <TouchableOpacity
                             onPress={() => handlePickFile(item.nama_field)}
                             className="p-4 border border-gray-300 rounded-lg bg-gray-50"
@@ -194,12 +209,26 @@ const PindahLuarProvinsi = () => {
                             </Text>
                         </TouchableOpacity>
                     ) : (
+                        /* TEXT INPUT (FIX APK) */
                         <TextInput
                             className="w-full p-4 text-base border border-gray-300 rounded-lg"
                             placeholder={`Masukkan ${item.nama_field}`}
-                            keyboardType={item.tipe_field === "number" ? "numeric" : "default"}
+                            placeholderTextColor="#9CA3AF"
+                            keyboardType={
+                                item.tipe_field === "number"
+                                    ? "number-pad"
+                                    : "default"
+                            }
                             secureTextEntry={item.tipe_field === "password"}
+                            textContentType={
+                                item.tipe_field === "password"
+                                    ? "newPassword"
+                                    : "none"
+                            }
                             autoCapitalize="none"
+                            autoCorrect={false}
+                            selectionColor="#2563EB"
+                            style={{ color: "#111827" }}
                             value={form[item.nama_field] || ""}
                             onChangeText={(text) =>
                                 setForm({ ...form, [item.nama_field]: text })

@@ -1,4 +1,4 @@
-import API_BASE_URL from '@/config/api';
+import { API_BASE_URL } from '@/config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';

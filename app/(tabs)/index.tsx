@@ -1,4 +1,4 @@
-import API_BASE_URL from '@/config/api';
+import { API_BASE_URL, IMAGE_BASE_URL } from '@/config/api';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -292,7 +292,7 @@ export default function Index() {
             <Image
               source={
                 user?.foto_profil
-                  ? { uri: `${API_BASE_URL}/${user.foto_profil}` } // jika dari server
+                  ? { uri: `${IMAGE_BASE_URL}/${user.foto_profil}` } // jika dari server
                   : require("../../assets/logo/Avatar.png") // jika kosong, pakai default
               }
               style={{ width: 50, height: 50, borderRadius: 16 }}
