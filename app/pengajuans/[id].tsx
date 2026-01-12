@@ -173,7 +173,7 @@ export default function PengajuanDetail() {
     const isCompleted = detail.status?.toLowerCase() === "selesai";
 
     return (
-        <ScrollView className="flex-1 bg-[#18353D] p-6">
+        <ScrollView className="flex-1 bg-[#18353D] pb-20 pt-6 pr-6 pl-6">
             <Text className="mb-4 text-2xl font-bold text-white">
                 {detail.jenis_surats?.nama_jenis}
             </Text>
@@ -271,6 +271,15 @@ export default function PengajuanDetail() {
                         ? "Lihat & Download Surat"
                         : "Menunggu Selesai..."}
                 </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                disabled={true}
+
+                className={`${isCompleted ? "bg-[#18353D]" : "bg-[#18353D] opacity-60"
+                    } p-3 rounded-lg mt-4 mb-10`}
+            >
+
             </TouchableOpacity>
         </ScrollView>
     );

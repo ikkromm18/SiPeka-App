@@ -3,15 +3,15 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link, useRouter } from "expo-router";
-import React, { useEffect, useState } from 'react';
-import { Alert, Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Alert, Image, RefreshControl, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
-// 🧩 Tipe data user lengkap — agar tidak merah lagi
+// 🧩 Tipe data user lengkap
 type User = {
     id?: number;
     name?: string;
     email?: string;
-    foto_profil?: string; // ✅ tambahkan field ini
+    foto_profil?: string;
 };
 
 // Komponen item menu profil
@@ -44,73 +44,109 @@ const ProfileMenuItem: React.FC<ProfileMenuItemProps> = ({ icon, text, onPress }
 
 const Profile = () => {
     const router = useRouter();
-    const [user, setUser] = useState<User | null>(null); // ✅ gunakan tipe User
+    const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
-    useEffect(() => {
-        const loadUser = async () => {
-            try {
-                const token = await AsyncStorage.getItem("token");
-                if (!token) return;
-
-                const res = await fetch(`${API_BASE_URL}/user`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        Accept: "application/json",
-                    },
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    console.log("✅ Data user:", data);
-                    setUser(data);
-                } else {
-                    console.log("⚠️ Gagal ambil user:", await res.text());
-                }
-            } catch (e) {
-                console.log("❌ Error:", e);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadUser();
-    }, []);
-
-    const handleLogout = async () => {
+    // ✅ Fungsi untuk load user data
+    const loadUser = async () => {
         try {
             const token = await AsyncStorage.getItem("token");
-
-            if (token) {
-                const res = await fetch(`${API_BASE_URL}/logout`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${token}`,
-                    },
-                });
-
-                const data = await res.json();
-                console.log("Logout response:", data);
+            if (!token) {
+                setLoading(false);
+                return;
             }
 
-            await AsyncStorage.removeItem("token");
-            router.replace("/auth/login");
-        } catch (error) {
-            console.error("Logout error:", error);
-            Alert.alert("Error", "Gagal logout, coba lagi.");
+            const res = await fetch(`${API_BASE_URL}/user`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: "application/json",
+                },
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                console.log("✅ Data user:", data);
+                setUser(data);
+            } else {
+                console.log("⚠️ Gagal ambil user:", await res.text());
+            }
+        } catch (e) {
+            console.log("❌ Error:", e);
+        } finally {
+            setLoading(false);
         }
     };
 
-    console.log(`${API_BASE_URL}/${user?.foto_profil}`);
+    // ✅ Load user saat pertama kali
+    useEffect(() => {
+        loadUser();
+    }, []);
 
+    // ✅ Fungsi refresh (pull to refresh)
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await loadUser();
+        setRefreshing(false);
+    }, []);
+
+    // ✅ Fungsi logout
+    const handleLogout = async () => {
+        Alert.alert(
+            "Konfirmasi Logout",
+            "Apakah Anda yakin ingin keluar?",
+            [
+                {
+                    text: "Batal",
+                    style: "cancel"
+                },
+                {
+                    text: "Logout",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            const token = await AsyncStorage.getItem("token");
+
+                            if (token) {
+                                const res = await fetch(`${API_BASE_URL}/logout`, {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json",
+                                        "Authorization": `Bearer ${token}`,
+                                    },
+                                });
+
+                                const data = await res.json();
+                                console.log("Logout response:", data);
+                            }
+
+                            await AsyncStorage.removeItem("token");
+                            router.replace("/auth/login");
+                        } catch (error) {
+                            console.error("Logout error:", error);
+                            Alert.alert("Error", "Gagal logout, coba lagi.");
+                        }
+                    }
+                }
+            ]
+        );
+    };
 
     return (
-
         <SafeAreaView className="flex-1 bg-[#18353D]">
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 30 }}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={["#03BA9B"]} // Android
+                        tintColor="#03BA9B" // iOS
+                        title="Memuat ulang..." // iOS
+                        titleColor="#03BA9B" // iOS
+                    />
+                }
             >
                 <View className="p-6">
                     {/* Bagian Profil */}

@@ -1,5 +1,4 @@
 import { API_BASE_URL } from "@/config/api";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -7,12 +6,11 @@ import {
     ActivityIndicator,
     Alert,
     Image,
-    Platform,
     StatusBar,
     Text,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 "@/config/api";
@@ -29,20 +27,20 @@ const Register = () => {
         password_confirmation: "",
         nik: "",
         no_kk: "",
-        nama_kepala_keluarga: "",
-        alamat: "",
-        desa: "",
-        kecamatan: "",
-        kabupaten: "",
-        provinsi: "",
-        rt: "",
-        rw: "",
-        kode_pos: "",
-        dusun: "",
-        nomor_hp: "",
-        pekerjaan: "",
-        tempat_lahir: "",
-        tgl_lahir: "",
+        nama_kepala_keluarga: "Wiji", // ✅ Default value
+        alamat: "Jalan Kalirandu", // ✅ Default value
+        desa: "Kalirandu", // ✅ Default value
+        kecamatan: "Petarukan", // ✅ Default value
+        kabupaten: "Pemalang", // ✅ Default value
+        provinsi: "Jawa Tengah", // ✅ Default value
+        rt: "19", // ✅ Default value
+        rw: "07", // ✅ Default value
+        kode_pos: "52211", // ✅ Default value
+        dusun: "Dusun II", // ✅ Default value
+        nomor_hp: "08123456789", // ✅ Default value
+        pekerjaan: "Mahasiswa", // ✅ Default value
+        tempat_lahir: "Pemalang", // ✅ Default value
+        tgl_lahir: "2004-01-18", // ✅ Default value (format ISO)
     });
 
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -179,21 +177,21 @@ const Register = () => {
                     { key: "email", label: "Email", placeholder: "Email", keyboardType: "email-address" },
                     { key: "password", label: "Password", placeholder: "Password", secureTextEntry: true },
                     { key: "password_confirmation", label: "Konfirmasi Password", placeholder: "Konfirmasi Password", secureTextEntry: true },
-                    { key: "nik", label: "NIK", placeholder: "NIK" },
-                    { key: "no_kk", label: "No KK", placeholder: "No KK" },
-                    { key: "nama_kepala_keluarga", label: "Nama Kepala Keluarga", placeholder: "Nama Kepala Keluarga" },
-                    { key: "alamat", label: "Alamat", placeholder: "Alamat" },
-                    { key: "desa", label: "Desa", placeholder: "Desa" },
-                    { key: "rt", label: "RT", placeholder: "RT" },
-                    { key: "rw", label: "RW", placeholder: "RW" },
-                    { key: "kecamatan", label: "Kecamatan", placeholder: "Kecamatan" },
-                    { key: "kabupaten", label: "Kabupaten", placeholder: "Kabupaten" },
-                    { key: "provinsi", label: "Provinsi", placeholder: "Provinsi" },
-                    { key: "kode_pos", label: "Kode Pos", placeholder: "Kode Pos" },
-                    { key: "dusun", label: "Dusun", placeholder: "Dusun" },
-                    { key: "nomor_hp", label: "Nomor HP", placeholder: "Nomor HP", keyboardType: "phone-pad" },
-                    { key: "pekerjaan", label: "Pekerjaan", placeholder: "Pekerjaan" },
-                    { key: "tempat_lahir", label: "Tempat Lahir", placeholder: "Tempat Lahir" },
+                    { key: "nik", label: "NIK", placeholder: "NIK (16 digit)", keyboardType: "numeric", maxLength: 16 }, // ✅ Tambah maxLength
+                    { key: "no_kk", label: "No KK", placeholder: "No KK (16 digit)", keyboardType: "numeric", maxLength: 16 }, // ✅ Tambah maxLength
+                    // { key: "nama_kepala_keluarga", label: "Nama Kepala Keluarga", placeholder: "Nama Kepala Keluarga" },
+                    // { key: "alamat", label: "Alamat", placeholder: "Alamat" },
+                    // { key: "desa", label: "Desa", placeholder: "Desa" },
+                    // { key: "rt", label: "RT", placeholder: "RT" },
+                    // { key: "rw", label: "RW", placeholder: "RW" },
+                    // { key: "kecamatan", label: "Kecamatan", placeholder: "Kecamatan" },
+                    // { key: "kabupaten", label: "Kabupaten", placeholder: "Kabupaten" },
+                    // { key: "provinsi", label: "Provinsi", placeholder: "Provinsi" },
+                    // { key: "kode_pos", label: "Kode Pos", placeholder: "Kode Pos" },
+                    // { key: "dusun", label: "Dusun", placeholder: "Dusun" },
+                    // { key: "nomor_hp", label: "Nomor HP", placeholder: "Nomor HP", keyboardType: "phone-pad" },
+                    // { key: "pekerjaan", label: "Pekerjaan", placeholder: "Pekerjaan" },
+                    // { key: "tempat_lahir", label: "Tempat Lahir", placeholder: "Tempat Lahir" },
                 ].map((item) => (
                     <View key={item.key} className="w-full mb-4">
                         <Text className="mb-2 font-semibold text-gray-700">{item.label}</Text>
@@ -202,6 +200,7 @@ const Register = () => {
                             placeholder={item.placeholder}
                             keyboardType={item.keyboardType as any}
                             secureTextEntry={item.secureTextEntry}
+                            maxLength={item.maxLength} // ✅ Tambahkan prop ini
                             autoCapitalize="none"
                             style={{ color: "#111827" }}
                             selectionColor="#2563EB"
@@ -213,7 +212,7 @@ const Register = () => {
 
 
                 {/* Date picker */}
-                <TouchableOpacity
+                {/* <TouchableOpacity
                     className="w-full p-4 mb-3 border border-gray-300 rounded-lg"
                     onPress={() => setShowDatePicker(true)}
                 >
@@ -234,7 +233,7 @@ const Register = () => {
                             }
                         }}
                     />
-                )}
+                )} */}
 
                 {/* Upload Foto KTP */}
                 <View className="flex-row w-full gap-2">

@@ -1,5 +1,6 @@
 import { API_BASE_URL, IMAGE_BASE_URL } from "@/config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
@@ -8,6 +9,7 @@ import {
     ActivityIndicator,
     Alert,
     Image,
+    Platform,
     ScrollView,
     Text,
     TextInput,
@@ -26,6 +28,9 @@ type User = {
     desa?: string;
     rt?: string;
     rw?: string;
+    kecamatan?: string;
+    kabupaten?: string;
+    provinsi?: string;
     kode_pos?: string;
     dusun?: string;
     nomor_hp?: string;
@@ -44,12 +49,15 @@ type PhotoState = {
 
 /* ================== COMPONENT ================== */
 export default function EditProfile() {
-    const { control, handleSubmit, reset } = useForm<User>();
+    const { control, handleSubmit, reset, setValue, watch } = useForm<User>();
     const [loading, setLoading] = useState(false);
+    const [showDatePicker, setShowDatePicker] = useState(false);
 
     const [fotoKtp, setFotoKtp] = useState<PhotoState | null>(null);
     const [fotoKk, setFotoKk] = useState<PhotoState | null>(null);
     const [fotoProfil, setFotoProfil] = useState<PhotoState | null>(null);
+
+    const tglLahir = watch("tgl_lahir");
 
     /* ================== PERMISSION ================== */
     useEffect(() => {
@@ -121,6 +129,7 @@ export default function EditProfile() {
                     const result = await ImagePicker.launchCameraAsync({
                         mediaTypes: ImagePicker.MediaTypeOptions.Images,
                         quality: 0.7,
+                        allowsEditing: true,
                     });
 
                     if (!result.canceled) {
@@ -137,6 +146,7 @@ export default function EditProfile() {
                     const result = await ImagePicker.launchImageLibraryAsync({
                         mediaTypes: ImagePicker.MediaTypeOptions.Images,
                         quality: 0.7,
+                        allowsEditing: true,
                     });
 
                     if (!result.canceled) {
@@ -156,51 +166,72 @@ export default function EditProfile() {
         try {
             setLoading(true);
             const token = await AsyncStorage.getItem("token");
-            if (!token) return;
+            if (!token) {
+                Alert.alert("Error", "Token tidak ditemukan");
+                return;
+            }
 
             const formData = new FormData();
 
+            // Append semua data user
             Object.entries(data).forEach(([key, value]) => {
-                if (value) formData.append(key, value as string);
+                if (value !== null && value !== undefined && value !== "") {
+                    formData.append(key, value as string);
+                }
             });
 
+            // ✅ Method spoofing untuk Laravel PUT request
             formData.append("_method", "PUT");
 
+            // Upload foto hanya jika ada perubahan (isLocal = true)
             if (fotoKtp?.isLocal) {
+                const uriParts = fotoKtp.uri.split('.');
+                const fileType = uriParts[uriParts.length - 1];
+
                 formData.append("foto_ktp", {
-                    uri: fotoKtp.uri,
-                    type: "image/jpeg",
-                    name: "foto_ktp.jpg",
+                    uri: Platform.OS === 'ios' ? fotoKtp.uri.replace('file://', '') : fotoKtp.uri,
+                    type: `image/${fileType}`,
+                    name: `foto_ktp.${fileType}`,
                 } as any);
             }
 
             if (fotoKk?.isLocal) {
+                const uriParts = fotoKk.uri.split('.');
+                const fileType = uriParts[uriParts.length - 1];
+
                 formData.append("foto_kk", {
-                    uri: fotoKk.uri,
-                    type: "image/jpeg",
-                    name: "foto_kk.jpg",
+                    uri: Platform.OS === 'ios' ? fotoKk.uri.replace('file://', '') : fotoKk.uri,
+                    type: `image/${fileType}`,
+                    name: `foto_kk.${fileType}`,
                 } as any);
             }
 
             if (fotoProfil?.isLocal) {
+                const uriParts = fotoProfil.uri.split('.');
+                const fileType = uriParts[uriParts.length - 1];
+
                 formData.append("foto_profil", {
-                    uri: fotoProfil.uri,
-                    type: "image/jpeg",
-                    name: "foto_profil.jpg",
+                    uri: Platform.OS === 'ios' ? fotoProfil.uri.replace('file://', '') : fotoProfil.uri,
+                    type: `image/${fileType}`,
+                    name: `foto_profil.${fileType}`,
                 } as any);
             }
 
-            await axios.post(`${API_BASE_URL}/profile/update`, formData, {
+            const response = await axios.post(`${API_BASE_URL}/profile/update`, formData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "multipart/form-data",
+                    Accept: "application/json",
                 },
             });
 
-            Alert.alert("Sukses", "Profil berhasil diperbarui");
+            Alert.alert("Sukses", response.data.message || "Profil berhasil diperbarui");
         } catch (err: any) {
             console.log("Update error:", err.response?.data || err.message);
-            Alert.alert("Error", "Gagal memperbarui profil");
+            Alert.alert(
+                "Error",
+                err.response?.data?.message || "Gagal memperbarui profil"
+            );
         } finally {
             setLoading(false);
         }
@@ -209,83 +240,175 @@ export default function EditProfile() {
     /* ================== LOADING ================== */
     if (loading) {
         return (
-            <View className="items-center justify-center flex-1">
+            <View className="items-center justify-center flex-1 bg-white">
                 <ActivityIndicator size="large" color="#03B798" />
-                <Text>Memuat...</Text>
+                <Text className="mt-4 text-gray-600">Memuat...</Text>
             </View>
         );
     }
 
+    /* ================== FORM FIELDS CONFIG ================== */
+    const formFields = [
+        { name: "name", label: "Nama Lengkap", placeholder: "Nama Lengkap" },
+        { name: "email", label: "Email", placeholder: "Email", keyboardType: "email-address" },
+        { name: "nik", label: "NIK", placeholder: "NIK (16 digit)", keyboardType: "numeric", maxLength: 16 },
+        { name: "no_kk", label: "No KK", placeholder: "No KK (16 digit)", keyboardType: "numeric", maxLength: 16 },
+        { name: "nama_kepala_keluarga", label: "Nama Kepala Keluarga", placeholder: "Nama Kepala Keluarga" },
+        { name: "alamat", label: "Alamat", placeholder: "Alamat" },
+        { name: "desa", label: "Desa", placeholder: "Desa" },
+        { name: "rt", label: "RT", placeholder: "RT", keyboardType: "numeric" },
+        { name: "rw", label: "RW", placeholder: "RW", keyboardType: "numeric" },
+        { name: "kecamatan", label: "Kecamatan", placeholder: "Kecamatan" },
+        { name: "kabupaten", label: "Kabupaten", placeholder: "Kabupaten" },
+        { name: "provinsi", label: "Provinsi", placeholder: "Provinsi" },
+        { name: "kode_pos", label: "Kode Pos", placeholder: "Kode Pos", keyboardType: "numeric", maxLength: 5 },
+        { name: "dusun", label: "Dusun", placeholder: "Dusun" },
+        { name: "nomor_hp", label: "Nomor HP", placeholder: "Nomor HP", keyboardType: "phone-pad" },
+        { name: "pekerjaan", label: "Pekerjaan", placeholder: "Pekerjaan" },
+        { name: "tempat_lahir", label: "Tempat Lahir", placeholder: "Tempat Lahir" },
+    ];
+
     /* ================== UI ================== */
     return (
-        <ScrollView className="flex-1 p-6 pb-10 bg-white">
-            <Text className="mb-6 text-2xl font-bold text-center">
-                Edit Profil
-            </Text>
-
-            {[
-                ["name", "Nama"],
-                ["email", "Email"],
-                ["nik", "NIK"],
-                ["no_kk", "No KK"],
-            ].map(([name, label]) => (
-                <View key={name} className="mb-4">
-                    <Text>{label}</Text>
-                    <Controller
-                        control={control}
-                        name={name as keyof User}
-                        render={({ field: { onChange, value } }) => (
-                            <TextInput
-                                className="p-3 border rounded"
-                                value={value}
-                                onChangeText={onChange}
-                            />
-                        )}
-                    />
-                </View>
-            ))}
-
-            {/* FOTO KTP */}
-            <View className="mb-4">
-                {fotoKtp && (
-                    <Image source={{ uri: fotoKtp.uri }} className="h-40 mb-2 rounded" />
-                )}
-                <TouchableOpacity onPress={() => pickImage(setFotoKtp)}>
-                    <Text className="p-3 text-center text-white bg-green-500 rounded">
-                        Upload Foto KTP
-                    </Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* FOTO KK */}
-            <View className="mb-4">
-                {fotoKk && (
-                    <Image source={{ uri: fotoKk.uri }} className="h-40 mb-2 rounded" />
-                )}
-                <TouchableOpacity onPress={() => pickImage(setFotoKk)}>
-                    <Text className="p-3 text-center text-white bg-green-500 rounded">
-                        Upload Foto KK
-                    </Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* FOTO PROFIL */}
-            <View className="mb-6">
-                {fotoProfil && (
-                    <Image source={{ uri: fotoProfil.uri }} className="h-40 mb-2 rounded" />
-                )}
-                <TouchableOpacity onPress={() => pickImage(setFotoProfil)}>
-                    <Text className="p-3 text-center text-white bg-green-500 rounded">
-                        Upload Foto Profil
-                    </Text>
-                </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity onPress={handleSubmit(onSubmit)}>
-                <Text className="p-4 mb-16 text-center text-white bg-black rounded">
-                    Simpan Perubahan
+        <ScrollView className="flex-1 bg-white">
+            <View className="p-6 pb-32">
+                <Text className="mb-6 text-2xl font-bold text-center text-gray-800">
+                    Edit Profil
                 </Text>
-            </TouchableOpacity>
+
+                {/* FOTO PROFIL */}
+                <View className="items-center mb-6">
+                    {fotoProfil && (
+                        <Image
+                            source={{ uri: fotoProfil.uri }}
+                            className="w-32 h-32 mb-3 border-4 border-teal-500 rounded-full"
+                        />
+                    )}
+                    <TouchableOpacity
+                        onPress={() => pickImage(setFotoProfil)}
+                        className="px-6 py-3 bg-teal-500 rounded-lg"
+                    >
+                        <Text className="font-semibold text-white">
+                            {fotoProfil ? "Ubah Foto Profil" : "Upload Foto Profil"}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* FORM FIELDS */}
+                {formFields.map((field) => (
+                    <View key={field.name} className="mb-4">
+                        <Text className="mb-2 font-semibold text-gray-700">
+                            {field.label}
+                        </Text>
+                        <Controller
+                            control={control}
+                            name={field.name as keyof User}
+                            render={({ field: { onChange, value } }) => (
+                                <TextInput
+                                    className="p-3 border border-gray-300 rounded-lg"
+                                    placeholder={field.placeholder}
+                                    value={value || ""}
+                                    onChangeText={(text) => {
+                                        // Validasi khusus untuk NIK dan No KK (hanya angka)
+                                        if (field.name === "nik" || field.name === "no_kk") {
+                                            const numericText = text.replace(/[^0-9]/g, "");
+                                            onChange(numericText);
+                                        } else {
+                                            onChange(text);
+                                        }
+                                    }}
+                                    keyboardType={field.keyboardType as any}
+                                    maxLength={field.maxLength}
+                                    style={{ color: "#111827" }}
+                                />
+                            )}
+                        />
+                    </View>
+                ))}
+
+                {/* TANGGAL LAHIR */}
+                <View className="mb-4">
+                    <Text className="mb-2 font-semibold text-gray-700">Tanggal Lahir</Text>
+                    <TouchableOpacity
+                        className="p-3 border border-gray-300 rounded-lg"
+                        onPress={() => setShowDatePicker(true)}
+                    >
+                        <Text className="text-gray-800">
+                            {tglLahir ? `📅 ${tglLahir}` : "Pilih Tanggal Lahir"}
+                        </Text>
+                    </TouchableOpacity>
+                    {showDatePicker && (
+                        <DateTimePicker
+                            value={tglLahir ? new Date(tglLahir) : new Date()}
+                            mode="date"
+                            display={Platform.OS === "ios" ? "spinner" : "calendar"}
+                            onChange={(event, selectedDate) => {
+                                setShowDatePicker(false);
+                                if (selectedDate) {
+                                    const isoDate = selectedDate.toISOString().split("T")[0];
+                                    setValue("tgl_lahir", isoDate);
+                                }
+                            }}
+                        />
+                    )}
+                </View>
+
+                {/* FOTO KTP */}
+                <View className="mb-4">
+                    <Text className="mb-2 font-semibold text-gray-700">Foto KTP</Text>
+                    {fotoKtp && (
+                        <Image
+                            source={{ uri: fotoKtp.uri }}
+                            className="w-full mb-3 rounded-lg h-52"
+                            resizeMode="cover"
+                        />
+                    )}
+                    <TouchableOpacity
+                        onPress={() => pickImage(setFotoKtp)}
+                        className="p-3 bg-blue-500 rounded-lg"
+                    >
+                        <Text className="font-semibold text-center text-white">
+                            {fotoKtp ? "Ubah Foto KTP" : "Upload Foto KTP"}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* FOTO KK */}
+                <View className="mb-6">
+                    <Text className="mb-2 font-semibold text-gray-700">Foto KK</Text>
+                    {fotoKk && (
+                        <Image
+                            source={{ uri: fotoKk.uri }}
+                            className="w-full mb-3 rounded-lg h-52"
+                            resizeMode="cover"
+                        />
+                    )}
+                    <TouchableOpacity
+                        onPress={() => pickImage(setFotoKk)}
+                        className="p-3 bg-blue-500 rounded-lg"
+                    >
+                        <Text className="font-semibold text-center text-white">
+                            {fotoKk ? "Ubah Foto KK" : "Upload Foto KK"}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* SUBMIT BUTTON */}
+                <TouchableOpacity
+                    onPress={handleSubmit(onSubmit)}
+                    disabled={loading}
+                    className="p-4 bg-teal-600 rounded-lg shadow-lg"
+                    activeOpacity={0.8}
+                >
+                    {loading ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <Text className="text-lg font-bold text-center text-white">
+                            Simpan Perubahan
+                        </Text>
+                    )}
+                </TouchableOpacity>
+            </View>
         </ScrollView>
     );
 }
