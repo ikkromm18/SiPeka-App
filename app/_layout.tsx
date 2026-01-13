@@ -1,6 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
 import { Stack } from "expo-router";
-import { Pressable } from "react-native";
 import { AuthProvider } from "./context/AuthContext";
 import "./global.css";
 
@@ -30,11 +28,7 @@ export default function RootLayout() {
 
 
         <Stack.Screen name="editProfile" options={{
-          headerShown: true, title: "Edit Profile", headerRight: () => (
-            <Pressable onPress={() => console.log("✅ Simpan ditekan")}>
-              <Ionicons name="checkmark" size={24} color="white" />
-            </Pressable>
-          ),
+          headerShown: true, title: "Edit Profile"
         }} />
         <Stack.Screen name="ubahPassword" options={{ headerShown: true, title: "Ubah Password" }} />
 
