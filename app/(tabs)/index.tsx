@@ -219,8 +219,31 @@ export default function Index() {
           <Text className="mt-4 text-xl font-semibold text-center text-white">
             Akun Anda Belum Aktif
           </Text>
-          <Text className="mt-2 text-center text-gray-300">
+          <Text className="mt-2 mb-4 text-center text-gray-300">
             Silakan hubungi admin atau pihak kecamatan untuk mengaktifkan kembali akun Anda.
+          </Text>
+
+          {loadingNomorAdmin ? (
+            <View className="flex flex-row items-center justify-center w-full gap-3 p-4 text-center bg-gray-500 rounded">
+              <ActivityIndicator size="small" color="#fff" />
+              <Text className="text-white">Memuat nomor admin...</Text>
+            </View>
+          ) : nomorAdmin ? (
+            <Link href={nomorAdmin} asChild>
+              <TouchableOpacity className="p-4 bg-[#03BA9B] rounded flex flex-row items-center justify-center gap-3 text-center w-full">
+                <FontAwesome name="whatsapp" size={24} color="white" />
+                <Text className="text-white">Hubungi WA Admin</Text>
+              </TouchableOpacity>
+            </Link>
+          ) : (
+            <View className="flex flex-row items-center justify-center w-full gap-3 p-4 text-center bg-gray-500 rounded">
+              <MaterialIcons name="error-outline" size={20} color="white" />
+              <Text className="text-white">Nomor admin belum tersedia</Text>
+            </View>
+          )}
+
+          <Text className="mt-4 text-sm font-semibold text-center text-white">
+            Jangan Lupa Lengkapi Data Anda di Menu Akun
           </Text>
         </ScrollView>
       </View>

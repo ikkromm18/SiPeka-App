@@ -27,20 +27,20 @@ const Register = () => {
         password_confirmation: "",
         nik: "",
         no_kk: "",
-        nama_kepala_keluarga: "Wiji", // ✅ Default value
-        alamat: "Jalan Kalirandu", // ✅ Default value
-        desa: "Kalirandu", // ✅ Default value
-        kecamatan: "Petarukan", // ✅ Default value
-        kabupaten: "Pemalang", // ✅ Default value
-        provinsi: "Jawa Tengah", // ✅ Default value
-        rt: "19", // ✅ Default value
-        rw: "07", // ✅ Default value
-        kode_pos: "52211", // ✅ Default value
-        dusun: "Dusun II", // ✅ Default value
-        nomor_hp: "08123456789", // ✅ Default value
-        pekerjaan: "Mahasiswa", // ✅ Default value
-        tempat_lahir: "Pemalang", // ✅ Default value
-        tgl_lahir: "2004-01-18", // ✅ Default value (format ISO)
+        nama_kepala_keluarga: "",
+        alamat: "",
+        desa: "",
+        kecamatan: "",
+        kabupaten: "",
+        provinsi: "",
+        rt: "",
+        rw: "",
+        kode_pos: "",
+        dusun: "",
+        nomor_hp: "",
+        pekerjaan: "",
+        tempat_lahir: "",
+        tgl_lahir: "",
     });
 
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -101,28 +101,28 @@ const Register = () => {
                 formData.append(key, form[key]);
             });
 
-            if (fotoKtp) {
-                formData.append("foto_ktp", {
-                    uri: fotoKtp.uri,
-                    type: "image/jpeg",
-                    name: "foto_ktp.jpg",
-                } as any);
-            }
-            if (fotoKk) {
-                formData.append("foto_kk", {
-                    uri: fotoKk.uri,
-                    type: "image/jpeg",
-                    name: "foto_kk.jpg",
-                } as any);
-            }
+            // if (fotoKtp) {
+            //     formData.append("foto_ktp", {
+            //         uri: fotoKtp.uri,
+            //         type: "image/jpeg",
+            //         name: "foto_ktp.jpg",
+            //     } as any);
+            // }
+            // if (fotoKk) {
+            //     formData.append("foto_kk", {
+            //         uri: fotoKk.uri,
+            //         type: "image/jpeg",
+            //         name: "foto_kk.jpg",
+            //     } as any);
+            // }
 
-            if (fotoProfil) {
-                formData.append("foto_profil", {
-                    uri: fotoProfil.uri,
-                    type: "image/jpeg",
-                    name: "foto_profil.jpg",
-                } as any);
-            }
+            // if (fotoProfil) {
+            //     formData.append("foto_profil", {
+            //         uri: fotoProfil.uri,
+            //         type: "image/jpeg",
+            //         name: "foto_profil.jpg",
+            //     } as any);
+            // }
 
             const response = await fetch(`${API_BASE_URL}/register`, {
                 method: "POST",
@@ -236,7 +236,7 @@ const Register = () => {
                 )} */}
 
                 {/* Upload Foto KTP */}
-                <View className="flex-row w-full gap-2">
+                {/* <View className="flex-row w-full gap-2">
                     <TouchableOpacity
                         onPress={() => pickImage(setFotoKtp, false)}
                         className="items-center flex-1 p-3 border border-gray-400 rounded-lg"
@@ -256,10 +256,10 @@ const Register = () => {
                         source={{ uri: fotoKtp.uri }}
                         style={{ width: 120, height: 80, marginTop: 8, borderRadius: 8 }}
                     />
-                )}
+                )} */}
 
                 {/* Upload Foto KK */}
-                <View className="flex-row w-full gap-2 mt-2">
+                {/* <View className="flex-row w-full gap-2 mt-2">
                     <TouchableOpacity
                         onPress={() => pickImage(setFotoKk, false)}
                         className="items-center flex-1 p-3 border border-gray-400 rounded-lg"
@@ -278,10 +278,10 @@ const Register = () => {
                         source={{ uri: fotoKk.uri }}
                         style={{ width: 120, height: 80, marginTop: 8, borderRadius: 8 }}
                     />
-                )}
+                )} */}
 
                 {/* Upload Foto Profil */}
-                <View className="flex-row w-full gap-2 mt-2">
+                {/* <View className="flex-row w-full gap-2 mt-2">
                     <TouchableOpacity
                         onPress={() => pickImage(setFotoProfil, false)}
                         className="items-center flex-1 p-3 border border-gray-400 rounded-lg"
@@ -307,7 +307,7 @@ const Register = () => {
                             alignSelf: "center",
                         }}
                     />
-                )}
+                )} */}
 
                 {/* Tombol daftar */}
                 <TouchableOpacity

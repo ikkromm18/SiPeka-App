@@ -163,6 +163,15 @@ export default function EditProfile() {
 
     /* ================== SUBMIT ================== */
     const onSubmit = async (data: User) => {
+
+        if (data.tgl_lahir) {
+            const umur = hitungUmur(data.tgl_lahir);
+
+            if (umur < 17) {
+                Alert.alert("Gagal", "Usia minimal adalah 17 tahun.");
+                return;
+            }
+        }
         try {
             setLoading(true);
             const token = await AsyncStorage.getItem("token");
@@ -237,6 +246,21 @@ export default function EditProfile() {
         }
     };
 
+    const hitungUmur = (tglLahir: string) => {
+        const today = new Date();
+        const birthDate = new Date(tglLahir);
+
+        let umur = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            umur--;
+        }
+
+        return umur;
+    };
+
+
     /* ================== LOADING ================== */
     if (loading) {
         return (
@@ -267,6 +291,9 @@ export default function EditProfile() {
         { name: "pekerjaan", label: "Pekerjaan", placeholder: "Pekerjaan" },
         { name: "tempat_lahir", label: "Tempat Lahir", placeholder: "Tempat Lahir" },
     ];
+
+    const maxBirthDate = new Date();
+    maxBirthDate.setFullYear(maxBirthDate.getFullYear() - 17);
 
     /* ================== UI ================== */
     return (
@@ -338,18 +365,43 @@ export default function EditProfile() {
                         </Text>
                     </TouchableOpacity>
                     {showDatePicker && (
+                        // <DateTimePicker
+                        //     value={tglLahir ? new Date(tglLahir) : new Date()}
+                        //     mode="date"
+                        //     display={Platform.OS === "ios" ? "spinner" : "calendar"}
+                        //     onChange={(event, selectedDate) => {
+                        //         setShowDatePicker(false);
+                        //         if (selectedDate) {
+                        //             const isoDate = selectedDate.toISOString().split("T")[0];
+                        //             setValue("tgl_lahir", isoDate);
+                        //         }
+                        //     }}
+                        // />
                         <DateTimePicker
-                            value={tglLahir ? new Date(tglLahir) : new Date()}
+                            value={tglLahir ? new Date(tglLahir) : maxBirthDate}
                             mode="date"
+                            maximumDate={maxBirthDate}   // 🔒 TIDAK bisa pilih umur < 17
                             display={Platform.OS === "ios" ? "spinner" : "calendar"}
                             onChange={(event, selectedDate) => {
                                 setShowDatePicker(false);
+
                                 if (selectedDate) {
                                     const isoDate = selectedDate.toISOString().split("T")[0];
+                                    const umur = hitungUmur(isoDate);
+
+                                    if (umur < 17) {
+                                        Alert.alert(
+                                            "Usia tidak memenuhi",
+                                            "Umur minimal untuk mendaftar adalah 17 tahun."
+                                        );
+                                        return;
+                                    }
+
                                     setValue("tgl_lahir", isoDate);
                                 }
                             }}
                         />
+
                     )}
                 </View>
 
